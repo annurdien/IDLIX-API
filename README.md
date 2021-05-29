@@ -21,12 +21,15 @@ memodifikasi projek ini ke publik. **Namun, biarkan lisensi ini sebagai credit/a
 [![Creative Commons](https://i.creativecommons.org/l/by-sa/4.0/88x31.png)](https://creativecommons.org/licenses/by-sa/4.0/ "Redirect to Creative Commons")
 
 ### Instalasi
+```properties
+-- Install node.js (V14 ke atas)
 
-- Install node.js (V14 ke atas)
-- Install yarn (jika ingin menggunakan `yarn` daripada `npm`)
-- Clone repo ini.
-- Instal terlebih dahulu dengan cara mengetik `npm install` atau `yarn install`.<br>
-- ketik di terminal `npm start` untuk menjalankannya
+$ git clone https://github.com/annurdien/IDLIX-API.git
+$ cd IDLIX-API
+$ npm install
+$ npm start
+```
+
 
 ## Penggunaan
 
