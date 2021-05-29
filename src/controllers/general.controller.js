@@ -133,3 +133,59 @@ exports.cinemaxxi = async (_, res) => {
 
   }
 };
+
+
+exports.mcu = async (_, res) => {
+  try {
+    /* Get data from cache*/
+    const caches = await cache.featured.get('mcu');
+    const hit =
+      Date.now() - (caches?.timestamp || 0) < cacheTime.mcu * 3600000
+        ? true
+        : false;
+    //if (hit) return res.send(caches.data)
+
+    /* Get Data */
+    const response = await Axios('/marvel-cinematic-universe');
+    const $ = cheerio.load(response.data);
+    const element = $('.single-page');
+
+    /* find n each data */
+    let mcu = [];
+    let title, link;
+
+    $(element)
+      .find('.wp-content > .row > .column')
+      .each((_, e) => {
+        title = $(e).find('.card > a').attr('title');
+
+        link = {
+          endpoint: $(e).find('.card > a').attr('href'),
+          url: 'https://185.231.223.71/movie' + $(e).find('.card > a').attr('href'),
+          thumbnail: $(e).find('.card > a > img').attr('src'),
+        };
+
+        console.log(link);
+
+        mcu.push({
+          title,
+          link,
+        });
+      });
+
+    await cache.mcu.set('mcu', {
+
+      data: mcu,
+      timestamp: Date.now(),
+
+    });
+
+    const cacheData = cache.mcu.get('mcu');
+    res.send(cacheData.data);
+
+  } catch (err) {
+
+    res.send({ success: false, error: err.message });
+
+  }
+};
