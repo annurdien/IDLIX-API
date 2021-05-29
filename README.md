@@ -3,7 +3,7 @@
 [![Support via Trakteer](https://img.shields.io/badge/Support-me!-green)](https://trakteer.id/katowproject)
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/annurdien/IDLIX-API/blob/main/LICENSE)
 
-<p align="center"><img src="https://cdn.discordapp.com/attachments/795771950076133438/795810964040843294/101899459_135497158124648_7045376805259230317_o.jpg" /></p>
+<p align="center"><img src="https://tenor.com/view/uraraka-eat-rice-anime-gif-10616934" /></p>
 
 ## About
 
@@ -22,7 +22,7 @@ memodifikasi projek ini ke publik. **Namun, biarkan lisensi ini sebagai credit/a
 
 ### Instalasi
 
-- Instal node.js (V14 ke atas)
+- Install node.js (V14 ke atas)
 - Install yarn (jika ingin menggunakan `yarn` daripada `npm`)
 - Clone repo ini.
 - Instal terlebih dahulu dengan cara mengetik `npm install` atau `yarn install`.<br>
@@ -43,4 +43,4 @@ Get Status IDLIX
 **example** : https://idlix-api.herokuapp.com/api/
 
 <p align="center"><h1>Selamat Mencoba!</h1><br></p>
-<p align="center"><img src="https://cdn.discordapp.com/attachments/795771950076133438/795832442153598986/tenor_5.gif" /></p>
+<p align="center"><img src="https://c.tenor.com/TBL2c8I16LcAAAAM/isla-plastic-memories.gif" /></p>
