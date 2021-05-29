@@ -2,7 +2,7 @@
  * @ Author: Annurdien Rasyid
  * @ Create Time: 2021-05-29 02:55:16
  * @ Modified by: Annurdien Rasyid
- * @ Modified time: 2021-05-29 16:56:09
+ * @ Modified time: 2021-05-29 18:54:51
  * @ Description: IDLIX API for scrapping movie from IDLIX
  */
 
@@ -14,16 +14,18 @@ const cors = require('cors');
 /* ============ */
 const PORT = process.env.PORT || 3000;
 const general = require('./src/routes/general.routes');
-const movie = require('./src/routes/movie.routes');
+const movies = require('./src/routes/movie.routes');
 const series = require('./src/routes/tv_series.routes');
+const genres = require('./src/routes/genre.routes');
 const app = express();
 
 /* app */
 app.use(cors());
 app.use(helmet());
 app.use('/api', general);
-app.use('/api/movie', movie);
+app.use('/api/movie', movies);
 app.use('/api/series', series);
+app.use('/api/genre', genres);
 app.use(express.static('./public'));
 
 /* Status */

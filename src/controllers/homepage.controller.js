@@ -2,7 +2,7 @@
  * @ Author: Annurdien Rasyid
  * @ Create Time: 2021-05-29 04:14:51
  * @ Modified by: Annurdien Rasyid
- * @ Modified time: 2021-05-29 17:59:38
+ * @ Modified time: 2021-05-29 18:30:26
  * @ Description: IDLIX API for scrapping movie from IDLIX
  */
 
