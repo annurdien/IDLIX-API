@@ -26,7 +26,7 @@ memodifikasi projek ini ke publik. **Namun, biarkan lisensi ini sebagai credit/a
 - Install yarn (jika ingin menggunakan `yarn` daripada `npm`)
 - Clone repo ini.
 - Instal terlebih dahulu dengan cara mengetik `npm install` atau `yarn install`.<br>
-- ketik di terminal `node index.js` untuk menjalankannya
+- ketik di terminal `npm start` untuk menjalankannya
 
 ## Penggunaan
 
