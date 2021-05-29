@@ -34,7 +34,7 @@ memodifikasi projek ini ke publik. **Namun, biarkan lisensi ini sebagai credit/a
 
 ## Status
 
-Get Status Kusonime
+Get Status IDLIX
 
 ```
 /
