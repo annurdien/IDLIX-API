@@ -3,7 +3,7 @@
 [![Support via Trakteer](https://img.shields.io/badge/Support-me!-green)](https://trakteer.id/katowproject)
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/annurdien/IDLIX-API/blob/main/LICENSE)
 
-<p align="center"><img src="https://tenor.com/view/uraraka-eat-rice-anime-gif-10616934" /></p>
+<p align="center"><img src="https://cdn.discordapp.com/attachments/583683143895220226/848097131444568104/wp2745322.png" /></p>
 
 ## About
 
