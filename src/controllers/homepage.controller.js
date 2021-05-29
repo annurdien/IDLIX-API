@@ -1,3 +1,11 @@
+/**
+ * @ Author: Annurdien Rasyid
+ * @ Create Time: 2021-05-29 04:14:51
+ * @ Modified by: Annurdien Rasyid
+ * @ Modified time: 2021-05-29 17:39:09
+ * @ Description: IDLIX API for scrapping movie from IDLIX
+ */
+
 "use strict";
 
 const cheerio = require("cheerio");

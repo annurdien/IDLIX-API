@@ -1,3 +1,11 @@
+/**
+ * @ Author: Annurdien Rasyid
+ * @ Create Time: 2021-05-29 14:15:01
+ * @ Modified by: Annurdien Rasyid
+ * @ Modified time: 2021-05-29 17:39:12
+ * @ Description: IDLIX API for scrapping movie from IDLIX
+ */
+
 "use strict";
 
 const cheerio = require("cheerio");
@@ -71,7 +79,7 @@ exports.trending = async (_, res) => {
         ? true
         : false;
 
-    //if (hit) return res.send(caches.data);
+    if (hit) return res.send(caches.data);
 
     /* Get Data */
     const response = await Axios("/trending/?get=movies");
@@ -135,6 +143,7 @@ exports.trendingPage = async (req, res) => {
 
     const $ = cheerio.load(response.data);
     const element = $(".content.right.normal");
+
     /* find n each data */
     let trending = [];
     let title, link;
@@ -174,7 +183,6 @@ exports.trendingPage = async (req, res) => {
     send
       ? res.send(cacheData.data)
       : res.send({ success: false, message: "Page not found" });
-    console.log(send);
   } catch (err) {
     res.send({ success: false, error: err.message });
   }
