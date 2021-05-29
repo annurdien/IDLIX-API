@@ -1,7 +1,7 @@
 # Kusonime Scrapper
 
 [![Support via Trakteer](https://img.shields.io/badge/Support-me!-green)](https://trakteer.id/katowproject)
-[![License](https://img.shields.io/npm/l/IDLIX-API)](https://github.com/annurdien/IDLIX-API/blob/main/LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/annurdien/IDLIX-API/blob/main/LICENSE)
 
 <p align="center"><img src="https://cdn.discordapp.com/attachments/795771950076133438/795810964040843294/101899459_135497158124648_7045376805259230317_o.jpg" /></p>
 
