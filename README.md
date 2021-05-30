@@ -189,3 +189,5 @@ Get Featured Movie
 
 <p align="center"><h1>Selamat Mencoba!</h1><br></p>
 <p align="center"><img src="https://c.tenor.com/TBL2c8I16LcAAAAM/isla-plastic-memories.gif" /></p>
+
+**Contribution are welcome**
