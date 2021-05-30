@@ -2,3 +2,4 @@ node_modules
 json.sqlite
 .vscode
 Procfile
+*.swp

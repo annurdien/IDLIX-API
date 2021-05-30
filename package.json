@@ -4,8 +4,8 @@
   "description": "Idlix REST-API",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "cross-env NODE_EXTRA_CA_CERTS=\"./intermediate.pem\" node server.js"
+    "start": "cross-env NODE_EXTRA_CA_CERTS=\"./intermediate.pem\" node server.js",
+    "dev" : "cross-env NODE_EXTRA_CA_CERTS=\"./intermediate.pem\" nodemon server"
   },
   "repository": {
     "type": "git",

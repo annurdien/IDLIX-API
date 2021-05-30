@@ -6,7 +6,7 @@
  * @ Description: IDLIX API for scrapping movie from IDLIX
  */
 
-/* Module */
+/* Required Module */
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
