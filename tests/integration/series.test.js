@@ -16,7 +16,7 @@ const path       = require('path');
 
 const FIXTURES     = path.join(__dirname, '../fixtures');
 const NETWORK_HTML = fs.readFileSync(path.join(FIXTURES, 'network.html'), 'utf-8');
-const CARDS_HTML   = fs.readFileSync(path.join(FIXTURES, 'cards.html'),   'utf-8');
+const HOMEPAGE_HTML = fs.readFileSync(path.join(FIXTURES, 'homepage.html'), 'utf-8');
 
 describe('Series Routes', () => {
   let app;
@@ -32,10 +32,10 @@ describe('Series Routes', () => {
   // ── Network-based endpoints (Apple TV, Disney+, HBO, Netflix) ─────────────
 
   describe.each([
-    ['/api/series/apple',  '/network/apple-tv',  'appletvseries'],
-    ['/api/series/disney', '/network/disney',     'disneyplusseries'],
-    ['/api/series/hbo',    '/network/HBO',        'hboseries'],
-    ['/api/series/netflix','/network/netflix',    'netflixseries'],
+    ['/api/series/apple',  '/network/apple-tv-plus',  'appletvseries'],
+    ['/api/series/disney', '/network/disney-plus',    'disneyplusseries'],
+    ['/api/series/hbo',    '/network/hbo',            'hboseries'],
+    ['/api/series/netflix','/network/netflix',        'netflixseries'],
   ])('GET %s', (endpoint, upstreamPath, cacheKey) => {
     it('returns 200 with an array of series', async () => {
       httpClient.get.mockResolvedValue({ data: NETWORK_HTML });
@@ -44,7 +44,7 @@ describe('Series Routes', () => {
 
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body)).toBe(true);
-      expect(res.body).toHaveLength(2);
+      expect(res.body).toHaveLength(2); // 2 series in network fixture
       expect(httpClient.get).toHaveBeenCalledWith(upstreamPath);
     });
 
@@ -73,56 +73,52 @@ describe('Series Routes', () => {
   // ── GET /api/series/trending ──────────────────────────────────────────────
 
   describe('GET /api/series/trending', () => {
-    const trendingSeriesHtml = `
-      <div class="content right normal">
-        <div class="items normal">
-          <div class="item tvshows">
-            <div class="poster">
-              <a href="https://185.231.223.71/tvseries/trending-1/"></a>
-              <img alt="Trending Series 1" data-src="https://img.example.com/ts1.jpg"/>
-            </div>
-          </div>
-        </div>
-      </div>`;
-
-    it('returns 200 with trending TV series', async () => {
-      httpClient.get.mockResolvedValue({ data: trendingSeriesHtml });
+    it('returns 200 with trending TV series from homepage', async () => {
+      httpClient.get.mockResolvedValue({ data: HOMEPAGE_HTML });
 
       const res = await request(app).get('/api/series/trending');
 
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body)).toBe(true);
-      expect(res.body).toHaveLength(1);
-      expect(httpClient.get).toHaveBeenCalledWith('/trending/?get=tv');
+      expect(res.body).toHaveLength(2); // 2 series in "Trending Now"
+      expect(httpClient.get).toHaveBeenCalledWith('/');
     });
   });
 
   // ── GET /api/series/marvel ────────────────────────────────────────────────
 
   describe('GET /api/series/marvel', () => {
-    it('returns 200 with Marvel Studios series (card-style)', async () => {
-      httpClient.get.mockResolvedValue({ data: CARDS_HTML });
+    it('returns 200 with Network Originals series from homepage', async () => {
+      httpClient.get.mockResolvedValue({ data: HOMEPAGE_HTML });
 
       const res = await request(app).get('/api/series/marvel');
 
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body)).toBe(true);
-      expect(res.body).toHaveLength(2);
-      expect(httpClient.get).toHaveBeenCalledWith('/marvel-studios-series');
+      expect(res.body).toHaveLength(2); // 2 series in "Network Originals"
+      expect(httpClient.get).toHaveBeenCalledWith('/');
     });
   });
 
   // ── GET /api/series/netflix/:page ─────────────────────────────────────────
 
   describe('GET /api/series/netflix/:page', () => {
-    it('returns 200 with series for a valid page', async () => {
+    it('returns 200 with series for page 1', async () => {
+      httpClient.get.mockResolvedValue({ data: NETWORK_HTML });
+
+      const res = await request(app).get('/api/series/netflix/1');
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      expect(httpClient.get).toHaveBeenCalledWith('/network/netflix');
+    });
+
+    it('returns 404 for page 2 (new site has no pagination)', async () => {
       httpClient.get.mockResolvedValue({ data: NETWORK_HTML });
 
       const res = await request(app).get('/api/series/netflix/2');
 
-      expect(res.status).toBe(200);
-      expect(Array.isArray(res.body)).toBe(true);
-      expect(httpClient.get).toHaveBeenCalledWith('/network/netflix/page/2/');
+      expect(res.status).toBe(404);
     });
 
     it('returns 400 for a non-numeric page', async () => {

@@ -91,6 +91,8 @@ Get Featured Movie
 
 ## Get Trending Movie Pages
 
+> **Note:** The new IDLIX site no longer supports pagination. Page values greater than 1 will return a `404` error.
+
 ```
 /movie/trending/:page<number>
 ```
@@ -152,6 +154,8 @@ Get Featured Movie
 
 ## Get Netflix Pages
 
+> **Note:** The new IDLIX site no longer supports pagination. Page values greater than 1 will return a `404` error.
+
 ```
 /series/netflix/:page<number>
 ```
@@ -177,6 +181,8 @@ Get Featured Movie
 
 
 ## Get Genre Pages
+
+> **Note:** The new IDLIX site no longer supports pagination. Page values greater than 1 will return a `404` error.
 
 ```
 /genre/<endpoint>/:genre/:pages<number>

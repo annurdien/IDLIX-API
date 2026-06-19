@@ -5,9 +5,7 @@ const path = require('path');
 
 const {
   parseMediaItems,
-  parseCardItems,
-  parseFeaturedItems,
-  parseCinemaxxiItems,
+  parseHomepageSection,
 } = require('../../src/lib/scraper');
 
 const FIXTURES = path.join(__dirname, '../fixtures');
@@ -18,145 +16,128 @@ const read = (name) => fs.readFileSync(path.join(FIXTURES, name), 'utf-8');
 describe('parseMediaItems', () => {
   const trendingHtml = read('trending.html');
   const genreHtml    = read('genre.html');
+  const networkHtml  = read('network.html');
 
-  it('extracts movie items from a trending page', () => {
-    const items = parseMediaItems(
-      trendingHtml,
-      '.content.right.normal .items.normal > .item.movies',
-    );
-    expect(items).toHaveLength(2); // third item has no alt — filtered
+  it('extracts movie items from a movie listing page', () => {
+    const items = parseMediaItems(trendingHtml, 'movie');
+    expect(items).toHaveLength(2); // third item has empty text — filtered
     expect(items[0]).toMatchObject({
       title: 'Trending Movie 1',
       link: {
-        endpoint: 'movie/trending-movie-1/',
-        url:      'https://185.231.223.71/movie/trending-movie-1/',
-        thumbnail: 'https://img.example.com/t1.jpg',
+        endpoint: 'movie/trending-movie-1',
+        url:      'https://z2.idlixku.com/movie/trending-movie-1',
+        thumbnail: null,
       },
     });
     expect(items[1].title).toBe('Trending Movie 2');
   });
 
   it('extracts movie items from a genre page', () => {
-    const items = parseMediaItems(genreHtml, '.items.normal > .item.movies');
+    const items = parseMediaItems(genreHtml, 'movie');
     expect(items).toHaveLength(1);
     expect(items[0].title).toBe('Action Movie 1');
   });
 
   it('extracts tvshow items from a genre page', () => {
-    const items = parseMediaItems(genreHtml, '.items.normal > .item.tvshows');
+    const items = parseMediaItems(genreHtml, 'series');
     expect(items).toHaveLength(1);
     expect(items[0].title).toBe('Action Series 1');
   });
 
+  it('extracts series items from a network page', () => {
+    const items = parseMediaItems(networkHtml, 'series');
+    expect(items).toHaveLength(2);
+    expect(items[0].title).toBe('Test Series 1');
+    expect(items[1].title).toBe('Test Series 2');
+  });
+
+  it('extracts all media items when no type filter is given', () => {
+    const items = parseMediaItems(networkHtml);
+    expect(items).toHaveLength(4);
+  });
+
   it('returns an empty array when no matching elements are found', () => {
-    expect(parseMediaItems('<div></div>', '.nonexistent > .item')).toEqual([]);
+    expect(parseMediaItems('<div></div>', 'movie')).toEqual([]);
   });
 
-  it('skips items that have no alt attribute (title)', () => {
+  it('skips items that have no text (title)', () => {
     const html = `
-      <div class="items normal">
-        <div class="item movies">
-          <div class="poster">
-            <a href="https://185.231.223.71/movie/no-alt/"></a>
-            <img data-src="https://img.example.com/noalt.jpg"/>
-          </div>
-        </div>
-      </div>`;
-    expect(parseMediaItems(html, '.items.normal > .item.movies')).toEqual([]);
-  });
-
-  it('handles missing href gracefully (sets empty string)', () => {
-    const html = `
-      <div class="items normal">
-        <div class="item movies">
-          <div class="poster">
-            <a></a>
-            <img alt="No Href Movie" data-src="https://img.example.com/nohref.jpg"/>
-          </div>
-        </div>
-      </div>`;
-    const items = parseMediaItems(html, '.items.normal > .item.movies');
+      <section class="sr-only">
+        <ul>
+          <li><a href="/movie/no-text"></a></li>
+          <li><a href="/movie/has-text">Has Text</a></li>
+        </ul>
+      </section>`;
+    const items = parseMediaItems(html, 'movie');
     expect(items).toHaveLength(1);
-    expect(items[0].link.url).toBe('');
+    expect(items[0].title).toBe('Has Text');
+  });
+
+  it('skips non-media links', () => {
+    const html = `
+      <section class="sr-only">
+        <ul>
+          <li><a href="/leaderboard">Leaderboard</a></li>
+          <li><a href="/movie/real-movie">Real Movie</a></li>
+        </ul>
+      </section>`;
+    const items = parseMediaItems(html, 'movie');
+    expect(items).toHaveLength(1);
+    expect(items[0].title).toBe('Real Movie');
   });
 });
 
-// ── parseCardItems ───────────────────────────────────────────────────────────
+// ── parseHomepageSection ─────────────────────────────────────────────────────
 
-describe('parseCardItems', () => {
-  const cardsHtml = read('cards.html');
+describe('parseHomepageSection', () => {
+  const homepageHtml = read('homepage.html');
 
-  it('extracts card items and constructs URL from prefix + href', () => {
-    const items = parseCardItems(cardsHtml, 'https://185.231.223.71/movie');
-    expect(items).toHaveLength(2); // third card has no href — filtered
+  it('extracts items from the "Trending Now" section', () => {
+    const items = parseHomepageSection(homepageHtml, 'Trending Now');
+    expect(items).toHaveLength(3);
     expect(items[0]).toMatchObject({
-      title: 'MCU Movie 1',
+      title: 'Teach You a Lesson',
       link: {
-        endpoint: '/mcu-movie-1/',
-        url:      'https://185.231.223.71/movie/mcu-movie-1/',
-        thumbnail: 'https://img.example.com/mcu1.jpg',
+        endpoint: 'series/teach-you-a-lesson-2026',
+        url:      'https://z2.idlixku.com/series/teach-you-a-lesson-2026',
+        thumbnail: null,
       },
     });
   });
 
-  it('filters out cards without an href attribute', () => {
-    const items = parseCardItems(cardsHtml, 'https://185.231.223.71/movie');
-    const found = items.find((i) => i.title === 'No Link Movie');
-    expect(found).toBeUndefined();
+  it('filters to movies only when type is "movie"', () => {
+    const items = parseHomepageSection(homepageHtml, 'Trending Now', 'movie');
+    expect(items).toHaveLength(1);
+    expect(items[0].title).toBe('Salmokji: Whispering Water');
+  });
+
+  it('filters to series only when type is "series"', () => {
+    const items = parseHomepageSection(homepageHtml, 'Trending Now', 'series');
+    expect(items).toHaveLength(2);
+    expect(items[0].title).toBe('Teach You a Lesson');
+  });
+
+  it('extracts items from the "Recently Added Movies" section', () => {
+    const items = parseHomepageSection(homepageHtml, 'Recently Added Movies', 'movie');
+    expect(items).toHaveLength(2);
+    expect(items[0].title).toBe('Per Aspera Ad Astra');
+  });
+
+  it('extracts items from the "Collections" section', () => {
+    const items = parseHomepageSection(homepageHtml, 'Collections');
+    expect(items).toHaveLength(2);
+  });
+
+  it('extracts items from the "Network Originals" section', () => {
+    const items = parseHomepageSection(homepageHtml, 'Network Originals', 'series');
+    expect(items).toHaveLength(2);
+  });
+
+  it('returns an empty array for a non-existent section', () => {
+    expect(parseHomepageSection(homepageHtml, 'Nonexistent Section')).toEqual([]);
   });
 
   it('returns an empty array for HTML without the expected structure', () => {
-    expect(parseCardItems('<div></div>', 'https://example.com')).toEqual([]);
-  });
-
-  it('uses the tvseries prefix correctly', () => {
-    const items = parseCardItems(cardsHtml, 'https://185.231.223.71/tvseries');
-    expect(items[0].link.url).toBe('https://185.231.223.71/tvseries/mcu-movie-1/');
-  });
-});
-
-// ── parseFeaturedItems ───────────────────────────────────────────────────────
-
-describe('parseFeaturedItems', () => {
-  const homepageHtml = read('homepage.html');
-
-  it('extracts featured items with correct endpoint stripping', () => {
-    const items = parseFeaturedItems(homepageHtml);
-    expect(items).toHaveLength(1);
-    expect(items[0]).toMatchObject({
-      title: 'Featured Movie 1',
-      link: {
-        endpoint:  'featured-movie-1/',
-        url:       'https://185.231.223.71/movie/featured-movie-1/',
-        thumbnail: 'https://img.example.com/f1.jpg',
-      },
-    });
-  });
-
-  it('returns an empty array for HTML without featured items', () => {
-    expect(parseFeaturedItems('<div></div>')).toEqual([]);
-  });
-});
-
-// ── parseCinemaxxiItems ──────────────────────────────────────────────────────
-
-describe('parseCinemaxxiItems', () => {
-  const homepageHtml = read('homepage.html');
-
-  it('extracts cinemaxxi items from the .items.normal section', () => {
-    const items = parseCinemaxxiItems(homepageHtml);
-    expect(items).toHaveLength(1);
-    expect(items[0]).toMatchObject({
-      title: 'Cinema Movie 1',
-      link: {
-        endpoint:  'cinema-movie-1/',
-        url:       'https://185.231.223.71/movie/cinema-movie-1/',
-        thumbnail: 'https://img.example.com/c1.jpg',
-      },
-    });
-  });
-
-  it('returns an empty array for HTML without .items.normal movies', () => {
-    expect(parseCinemaxxiItems('<div class="items normal"></div>')).toEqual([]);
+    expect(parseHomepageSection('<div></div>', 'Trending Now')).toEqual([]);
   });
 });

@@ -1,28 +1,16 @@
 <!DOCTYPE html>
 <html>
 <body>
-<div class="content right normal">
-  <div class="items normal">
-    <div class="item movies">
-      <div class="poster">
-        <a href="https://185.231.223.71/movie/trending-movie-1/"></a>
-        <img alt="Trending Movie 1" data-src="https://img.example.com/t1.jpg"/>
-      </div>
-    </div>
-    <div class="item movies">
-      <div class="poster">
-        <a href="https://185.231.223.71/movie/trending-movie-2/"></a>
-        <img alt="Trending Movie 2" data-src="https://img.example.com/t2.jpg"/>
-      </div>
-    </div>
-    <!-- Item without alt — should be filtered by scraper -->
-    <div class="item movies">
-      <div class="poster">
-        <a href="https://185.231.223.71/movie/no-title/"></a>
-        <img data-src="https://img.example.com/noalt.jpg"/>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- sr-only section with movie listing -->
+<section class="sr-only" aria-label="Movies catalog">
+  <h1>Movies</h1>
+  <p>Browse and stream movies online.</p>
+  <ul>
+    <li><a href="/movie/trending-movie-1">Trending Movie 1</a></li>
+    <li><a href="/movie/trending-movie-2">Trending Movie 2</a></li>
+    <!-- Item with empty text — should be filtered by scraper -->
+    <li><a href="/movie/no-title"></a></li>
+  </ul>
+</section>
 </body>
 </html>

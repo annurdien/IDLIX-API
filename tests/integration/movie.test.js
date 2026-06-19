@@ -18,7 +18,8 @@ const path       = require('path');
 const FIXTURES     = path.join(__dirname, '../fixtures');
 const TRENDING_HTML = fs.readFileSync(path.join(FIXTURES, 'trending.html'), 'utf-8');
 const CARDS_HTML    = fs.readFileSync(path.join(FIXTURES, 'cards.html'),    'utf-8');
-const EMPTY_HTML    = '<div class="content right normal"><div class="items normal"></div></div>';
+const HOMEPAGE_HTML = fs.readFileSync(path.join(FIXTURES, 'homepage.html'), 'utf-8');
+const EMPTY_HTML    = '<section class="sr-only"><ul></ul></section>';
 
 describe('Movie Routes', () => {
   let app;
@@ -35,18 +36,18 @@ describe('Movie Routes', () => {
 
   describe('GET /api/movie/trending', () => {
     it('returns 200 with an array of movies on success', async () => {
-      httpClient.get.mockResolvedValue({ data: TRENDING_HTML });
+      httpClient.get.mockResolvedValue({ data: HOMEPAGE_HTML });
 
       const res = await request(app).get('/api/movie/trending');
 
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body)).toBe(true);
-      expect(res.body).toHaveLength(2);
+      expect(res.body).toHaveLength(1); // only 1 movie in "Trending Now"
       expect(res.body[0]).toMatchObject({
         title: expect.any(String),
         link:  expect.objectContaining({ url: expect.any(String) }),
       });
-      expect(httpClient.get).toHaveBeenCalledWith('/trending/?get=movies');
+      expect(httpClient.get).toHaveBeenCalledWith('/');
     });
 
     it('returns cached data and skips HTTP when cache is fresh', async () => {
@@ -62,7 +63,7 @@ describe('Movie Routes', () => {
     });
 
     it('stores scraped results in cache', async () => {
-      httpClient.get.mockResolvedValue({ data: TRENDING_HTML });
+      httpClient.get.mockResolvedValue({ data: HOMEPAGE_HTML });
 
       await request(app).get('/api/movie/trending');
 
@@ -82,14 +83,14 @@ describe('Movie Routes', () => {
   // ── GET /api/movie/trending/:page ─────────────────────────────────────────
 
   describe('GET /api/movie/trending/:page', () => {
-    it('returns 200 with movies for a valid numeric page', async () => {
+    it('returns 200 with movies for page 1', async () => {
       httpClient.get.mockResolvedValue({ data: TRENDING_HTML });
 
       const res = await request(app).get('/api/movie/trending/1');
 
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body)).toBe(true);
-      expect(httpClient.get).toHaveBeenCalledWith('/trending/page/1/?get=movies');
+      expect(httpClient.get).toHaveBeenCalledWith('/movie');
     });
 
     it('returns 404 when the requested page has no results', async () => {
@@ -99,6 +100,14 @@ describe('Movie Routes', () => {
 
       expect(res.status).toBe(404);
       expect(res.body.success).toBe(false);
+    });
+
+    it('returns 404 for page 2 (new site has no pagination)', async () => {
+      httpClient.get.mockResolvedValue({ data: TRENDING_HTML });
+
+      const res = await request(app).get('/api/movie/trending/2');
+
+      expect(res.status).toBe(404);
     });
 
     it('returns 400 for a non-numeric page "abc"', async () => {
@@ -115,7 +124,7 @@ describe('Movie Routes', () => {
     it('returns 500 on network error', async () => {
       httpClient.get.mockRejectedValue(new Error('Timeout'));
 
-      const res = await request(app).get('/api/movie/trending/2');
+      const res = await request(app).get('/api/movie/trending/1');
 
       expect(res.status).toBe(500);
     });
@@ -124,15 +133,15 @@ describe('Movie Routes', () => {
   // ── GET /api/movie/mcu ────────────────────────────────────────────────────
 
   describe('GET /api/movie/mcu', () => {
-    it('returns 200 with MCU movies (card-style items)', async () => {
+    it('returns 200 with collection items from homepage', async () => {
       httpClient.get.mockResolvedValue({ data: CARDS_HTML });
 
       const res = await request(app).get('/api/movie/mcu');
 
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body)).toBe(true);
-      expect(res.body).toHaveLength(2); // third card has no href — filtered
-      expect(httpClient.get).toHaveBeenCalledWith('/marvel-cinematic-universe');
+      expect(res.body).toHaveLength(2); // third item has empty text — filtered
+      expect(httpClient.get).toHaveBeenCalledWith('/');
     });
 
     it('returns 500 on network error', async () => {

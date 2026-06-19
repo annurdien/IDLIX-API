@@ -1,21 +1,14 @@
 <!DOCTYPE html>
 <html>
 <body>
-<div class="items normal">
-  <!-- Movie item -->
-  <div class="item movies">
-    <div class="poster">
-      <a href="https://185.231.223.71/movie/action-movie-1/"></a>
-      <img alt="Action Movie 1" data-src="https://img.example.com/am1.jpg"/>
-    </div>
-  </div>
-  <!-- TV show item -->
-  <div class="item tvshows">
-    <div class="poster">
-      <a href="https://185.231.223.71/tvseries/action-series-1/"></a>
-      <img alt="Action Series 1" data-src="https://img.example.com/as1.jpg"/>
-    </div>
-  </div>
-</div>
+<!-- sr-only section with genre listing (mixed movies and series) -->
+<section class="sr-only" aria-label="Action catalog">
+  <h1>Genre: Action</h1>
+  <p>Action Movies & Series</p>
+  <ul>
+    <li><a href="/movie/action-movie-1">Action Movie 1</a></li>
+    <li><a href="/series/action-series-1">Action Series 1</a></li>
+  </ul>
+</section>
 </body>
 </html>

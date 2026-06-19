@@ -6,7 +6,7 @@
  */
 module.exports = {
   /** Base URL of the upstream IDLIX site (no trailing slash). */
-  BASE_URL: process.env.IDLIX_BASE_URL || 'https://185.231.223.71',
+  BASE_URL: process.env.IDLIX_BASE_URL || 'https://z2.idlixku.com',
 
   /** HTTP port the server listens on. */
   PORT: process.env.PORT || 3000,

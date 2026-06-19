@@ -15,6 +15,7 @@ const fs         = require('fs');
 const path       = require('path');
 
 const GENRE_HTML = fs.readFileSync(path.join(__dirname, '../fixtures/genre.html'), 'utf-8');
+const EMPTY_HTML = '<section class="sr-only"><ul></ul></section>';
 
 describe('Genre Routes', () => {
   let app;
@@ -39,16 +40,24 @@ describe('Genre Routes', () => {
       expect(Array.isArray(res.body)).toBe(true);
       expect(res.body).toHaveLength(1);
       expect(res.body[0].title).toBe('Action Movie 1');
-      expect(httpClient.get).toHaveBeenCalledWith('/genre/action/page/1');
+      expect(httpClient.get).toHaveBeenCalledWith('/genre/action');
     });
 
-    it('returns 200 with movies for a valid genre and page', async () => {
+    it('returns 200 with movies for page 1', async () => {
+      httpClient.get.mockResolvedValue({ data: GENRE_HTML });
+
+      const res = await request(app).get('/api/genre/movie/action/1');
+
+      expect(res.status).toBe(200);
+      expect(httpClient.get).toHaveBeenCalledWith('/genre/action');
+    });
+
+    it('returns 404 for page 2 (new site has no pagination)', async () => {
       httpClient.get.mockResolvedValue({ data: GENRE_HTML });
 
       const res = await request(app).get('/api/genre/movie/action/2');
 
-      expect(res.status).toBe(200);
-      expect(httpClient.get).toHaveBeenCalledWith('/genre/action/page/2');
+      expect(res.status).toBe(404);
     });
 
     it('uses cache when the entry is fresh', async () => {
@@ -99,13 +108,21 @@ describe('Genre Routes', () => {
       expect(res.body[0].title).toBe('Action Series 1');
     });
 
-    it('returns 200 with series for a valid genre and page', async () => {
+    it('returns 200 with series for page 1', async () => {
+      httpClient.get.mockResolvedValue({ data: GENRE_HTML });
+
+      const res = await request(app).get('/api/genre/series/action/1');
+
+      expect(res.status).toBe(200);
+      expect(httpClient.get).toHaveBeenCalledWith('/genre/action');
+    });
+
+    it('returns 404 for page 3 (new site has no pagination)', async () => {
       httpClient.get.mockResolvedValue({ data: GENRE_HTML });
 
       const res = await request(app).get('/api/genre/series/action/3');
 
-      expect(res.status).toBe(200);
-      expect(httpClient.get).toHaveBeenCalledWith('/genre/action/page/3');
+      expect(res.status).toBe(404);
     });
 
     it('returns 400 for a non-numeric page', async () => {
