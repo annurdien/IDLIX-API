@@ -1,21 +1,17 @@
-/**
- * @ Author: Annurdien Rasyid
- * @ Create Time: 2021-05-29 03:39:41
- * @ Modified by: Annurdien Rasyid
- * @ Modified time: 2021-05-29 17:39:14
- * @ Description: IDLIX API for scrapping movie from IDLIX
- */
+'use strict';
 
-const router = require("express").Router();
-const generalController = require("../controllers/homepage.controller");
+const { Router }      = require('express');
+const generalController = require('../controllers/homepage.controller');
 
-/* Home */
-router.get("/", generalController.status);
+const router = Router();
 
-/** Featured Movie */
-router.get("/featured", generalController.featured);
+/** GET /api/ — health / status */
+router.get('/', generalController.status);
 
-/** Cinema XXI Movie */
-router.get("/cinemaxxi", generalController.cinemaxxi);
+/** GET /api/featured — Featured movies */
+router.get('/featured', generalController.featured);
+
+/** GET /api/cinemaxxi — Cinema XXI movies */
+router.get('/cinemaxxi', generalController.cinemaxxi);
 
 module.exports = router;

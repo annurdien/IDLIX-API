@@ -1,0 +1,146 @@
+'use strict';
+
+// Must be hoisted before any require of the real modules
+jest.mock('../../src/lib/httpClient', () => ({ get: jest.fn() }));
+jest.mock('../../src/lib/cacheService', () => ({
+  isHit: jest.fn(),
+  get:   jest.fn(),
+  set:   jest.fn(),
+}));
+
+const request    = require('supertest');
+const createApp  = require('../../src/app');
+const httpClient = require('../../src/lib/httpClient');
+const cache      = require('../../src/lib/cacheService');
+const fs         = require('fs');
+const path       = require('path');
+
+const FIXTURES     = path.join(__dirname, '../fixtures');
+const TRENDING_HTML = fs.readFileSync(path.join(FIXTURES, 'trending.html'), 'utf-8');
+const CARDS_HTML    = fs.readFileSync(path.join(FIXTURES, 'cards.html'),    'utf-8');
+const EMPTY_HTML    = '<div class="content right normal"><div class="items normal"></div></div>';
+
+describe('Movie Routes', () => {
+  let app;
+
+  beforeAll(() => { app = createApp(); });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    cache.isHit.mockReturnValue(false);
+    cache.get.mockReturnValue(null);
+  });
+
+  // ── GET /api/movie/trending ───────────────────────────────────────────────
+
+  describe('GET /api/movie/trending', () => {
+    it('returns 200 with an array of movies on success', async () => {
+      httpClient.get.mockResolvedValue({ data: TRENDING_HTML });
+
+      const res = await request(app).get('/api/movie/trending');
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      expect(res.body).toHaveLength(2);
+      expect(res.body[0]).toMatchObject({
+        title: expect.any(String),
+        link:  expect.objectContaining({ url: expect.any(String) }),
+      });
+      expect(httpClient.get).toHaveBeenCalledWith('/trending/?get=movies');
+    });
+
+    it('returns cached data and skips HTTP when cache is fresh', async () => {
+      const cached = [{ title: 'Cached', link: { endpoint: 'x', url: 'http://x', thumbnail: null } }];
+      cache.isHit.mockReturnValue(true);
+      cache.get.mockReturnValue(cached);
+
+      const res = await request(app).get('/api/movie/trending');
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual(cached);
+      expect(httpClient.get).not.toHaveBeenCalled();
+    });
+
+    it('stores scraped results in cache', async () => {
+      httpClient.get.mockResolvedValue({ data: TRENDING_HTML });
+
+      await request(app).get('/api/movie/trending');
+
+      expect(cache.set).toHaveBeenCalledWith('trending', expect.any(Array));
+    });
+
+    it('returns 500 on network error', async () => {
+      httpClient.get.mockRejectedValue(new Error('Network Error'));
+
+      const res = await request(app).get('/api/movie/trending');
+
+      expect(res.status).toBe(500);
+      expect(res.body).toMatchObject({ success: false, message: expect.any(String) });
+    });
+  });
+
+  // ── GET /api/movie/trending/:page ─────────────────────────────────────────
+
+  describe('GET /api/movie/trending/:page', () => {
+    it('returns 200 with movies for a valid numeric page', async () => {
+      httpClient.get.mockResolvedValue({ data: TRENDING_HTML });
+
+      const res = await request(app).get('/api/movie/trending/1');
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      expect(httpClient.get).toHaveBeenCalledWith('/trending/page/1/?get=movies');
+    });
+
+    it('returns 404 when the requested page has no results', async () => {
+      httpClient.get.mockResolvedValue({ data: EMPTY_HTML });
+
+      const res = await request(app).get('/api/movie/trending/999');
+
+      expect(res.status).toBe(404);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('returns 400 for a non-numeric page "abc"', async () => {
+      const res = await request(app).get('/api/movie/trending/abc');
+      expect(res.status).toBe(400);
+      expect(httpClient.get).not.toHaveBeenCalled();
+    });
+
+    it('returns 400 for page "0"', async () => {
+      const res = await request(app).get('/api/movie/trending/0');
+      expect(res.status).toBe(400);
+    });
+
+    it('returns 500 on network error', async () => {
+      httpClient.get.mockRejectedValue(new Error('Timeout'));
+
+      const res = await request(app).get('/api/movie/trending/2');
+
+      expect(res.status).toBe(500);
+    });
+  });
+
+  // ── GET /api/movie/mcu ────────────────────────────────────────────────────
+
+  describe('GET /api/movie/mcu', () => {
+    it('returns 200 with MCU movies (card-style items)', async () => {
+      httpClient.get.mockResolvedValue({ data: CARDS_HTML });
+
+      const res = await request(app).get('/api/movie/mcu');
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      expect(res.body).toHaveLength(2); // third card has no href — filtered
+      expect(httpClient.get).toHaveBeenCalledWith('/marvel-cinematic-universe');
+    });
+
+    it('returns 500 on network error', async () => {
+      httpClient.get.mockRejectedValue(new Error('Timeout'));
+
+      const res = await request(app).get('/api/movie/mcu');
+
+      expect(res.status).toBe(500);
+    });
+  });
+});

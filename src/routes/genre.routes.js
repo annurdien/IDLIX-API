@@ -1,22 +1,21 @@
-/**
- * @ Author: Annurdien Rasyid
- * @ Create Time: 2021-05-29 18:32:04
- * @ Modified by: Annurdien Rasyid
- * @ Modified time: 2021-05-29 19:31:35
- * @ Description: IDLIX API for scrapping movie from IDLIX
- */
+'use strict';
 
-const router = require("express").Router();
-const genreController = require("../controllers/genre.controller");
+const { Router }          = require('express');
+const genreController     = require('../controllers/genre.controller');
+const { validatePage, validateGenre } = require('../middleware/validate');
 
-/** Genre Series */
-router.get("/series/:genre/:page", genreController.genreSeries);
+const router = Router();
 
-/** Genre Movie */
-router.get("/movie/:genre/:page", genreController.genreMovie);
+/** GET /api/genre/series/:genre */
+router.get('/series/:genre', validateGenre, genreController.genreSeries);
 
-/** Genre without pages */
-router.get("/series/:genre/", genreController.genreSeries);
-router.get("/movie/:genre/", genreController.genreMovie);
+/** GET /api/genre/series/:genre/:page */
+router.get('/series/:genre/:page', validateGenre, validatePage, genreController.genreSeries);
+
+/** GET /api/genre/movie/:genre */
+router.get('/movie/:genre', validateGenre, genreController.genreMovie);
+
+/** GET /api/genre/movie/:genre/:page */
+router.get('/movie/:genre/:page', validateGenre, validatePage, genreController.genreMovie);
 
 module.exports = router;
