@@ -30,9 +30,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">75% </span>
+                <span class="strong">80% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>6/8</span>
+                <span class='fraction'>8/10</span>
             </div>
         
             
@@ -122,12 +122,22 @@
 <a name='L57'></a><a href='#L57'>57</a>
 <a name='L58'></a><a href='#L58'>58</a>
 <a name='L59'></a><a href='#L59'>59</a>
-<a name='L60'></a><a href='#L60'>60</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -141,6 +151,8 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -164,61 +176,71 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">'use strict';
+<span class="cline-any cline-yes">3x</span></td><td class="text"><pre class="prettyprint lang-js">'use strict';
 &nbsp;
 const httpClient = require('../lib/httpClient');
 const cache      = require('../lib/cacheService');
-const { CACHE_TTL, BASE_URL } = require('../config/env');
-const { parseMediaItems, parseCardItems } = require('../lib/scraper');
+const { CACHE_TTL } = require('../config/env');
+const { parseMediaItems, parseHomepageSection } = require('../lib/scraper');
 &nbsp;
 /**
- * Fetch and parse Marvel Cinematic Universe movies.
+ * Fetch and parse the "Collections" section from the homepage.
+ * This replaces the old MCU endpoint — the new site no longer has a
+ * dedicated Marvel Cinematic Universe page, but the homepage "Collections"
+ * section serves as a curated collection equivalent.
  * @returns {Promise&lt;Array&gt;}
  */
 async function getMcu() {
   const key = 'mcu';
   <span class="missing-if-branch" title="if path not taken" >I</span>if (cache.isHit(key, CACHE_TTL.mcu)) <span class="cstat-no" title="statement not covered" >return cache.get(key);</span>
 &nbsp;
-  const { data } = await httpClient.get('/marvel-cinematic-universe');
-  const items = parseCardItems(data, `${BASE_URL}/movie`);
+  const { data } = await httpClient.get('/');
+  const items = parseHomepageSection(data, 'Collections');
   cache.set(key, items);
   return items;
 }
 &nbsp;
 /**
- * Fetch and parse trending movies (first page).
+ * Fetch and parse trending movies from the homepage.
+ * The new site's "Trending Now" section includes both movies and series;
+ * we filter to movies only.
  * @returns {Promise&lt;Array&gt;}
  */
 async function getTrending() {
   const key = 'trending';
   if (cache.isHit(key, CACHE_TTL.trending)) return cache.get(key);
 &nbsp;
-  const { data } = await httpClient.get('/trending/?get=movies');
-  const items = parseMediaItems(data, '.content.right.normal .items.normal &gt; .item.movies');
+  const { data } = await httpClient.get('/');
+  const items = parseHomepageSection(data, 'Trending Now', 'movie');
   cache.set(key, items);
   return items;
 }
 &nbsp;
 /**
  * Fetch and parse a specific page of trending movies.
- * Throws a 404 error if the page returns no results.
+ *
+ * The new site does not support pagination on listing pages.
+ * Page 1 returns the movie listing; pages beyond 1 throw a 404.
+ *
  * @param {number} page
  * @returns {Promise&lt;Array&gt;}
  */
@@ -226,10 +248,10 @@ async function getTrendingPage(page) {
   const key = `trending.page.${page}`;
   <span class="missing-if-branch" title="if path not taken" >I</span>if (cache.isHit(key, CACHE_TTL.trending)) <span class="cstat-no" title="statement not covered" >return cache.get(key);</span>
 &nbsp;
-  const { data } = await httpClient.get(`/trending/page/${page}/?get=movies`);
-  const items = parseMediaItems(data, '.content.right.normal .items.normal &gt; .item.movies');
+  const { data } = await httpClient.get('/movie');
+  const items = parseMediaItems(data, 'movie');
 &nbsp;
-  if (items.length === 0) {
+  if (items.length === 0 || page &gt; 1) {
     const err = new Error('Page not found');
     err.status = 404;
     throw err;
@@ -239,15 +261,14 @@ async function getTrendingPage(page) {
   return items;
 }
 &nbsp;
-module.exports = { getMcu, getTrending, getTrendingPage };
-&nbsp;</pre></td></tr></table></pre>
+module.exports = { getMcu, getTrending, getTrendingPage };</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-06-19T10:30:23.356Z
+                at 2026-06-19T14:38:30.639Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

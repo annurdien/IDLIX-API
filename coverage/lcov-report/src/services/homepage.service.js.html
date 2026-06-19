@@ -101,7 +101,12 @@
 <a name='L36'></a><a href='#L36'>36</a>
 <a name='L37'></a><a href='#L37'>37</a>
 <a name='L38'></a><a href='#L38'>38</a>
-<a name='L39'></a><a href='#L39'>39</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
@@ -114,18 +119,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -138,16 +131,36 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">'use strict';
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span></td><td class="text"><pre class="prettyprint lang-js">'use strict';
 &nbsp;
 const httpClient = require('../lib/httpClient');
 const cache      = require('../lib/cacheService');
 const { CACHE_TTL } = require('../config/env');
-const { parseFeaturedItems, parseCinemaxxiItems } = require('../lib/scraper');
+const { parseHomepageSection } = require('../lib/scraper');
 &nbsp;
 /**
  * Fetch and parse featured movies from the IDLIX homepage.
+ *
+ * The new site's homepage has a "Trending Now" section which serves as
+ * the equivalent of the old "featured" section.
  * Results are cached for CACHE_TTL.featured hours.
  * @returns {Promise&lt;Array&gt;}
  */
@@ -156,13 +169,16 @@ async function <span class="fstat-no" title="function not covered" >getFeatured(
 <span class="cstat-no" title="statement not covered" >  if (cache.isHit(key, CACHE_TTL.featured)) <span class="cstat-no" title="statement not covered" >return cache.get(key);</span></span>
 &nbsp;
   const { data } = <span class="cstat-no" title="statement not covered" >await httpClient.get('/');</span>
-  const items = <span class="cstat-no" title="statement not covered" >parseFeaturedItems(data);</span>
+  const items = <span class="cstat-no" title="statement not covered" >parseHomepageSection(data, 'Trending Now');</span>
 <span class="cstat-no" title="statement not covered" >  cache.set(key, items);</span>
 <span class="cstat-no" title="statement not covered" >  return items;</span>
 }
 &nbsp;
 /**
- * Fetch and parse Cinema XXI movies from the IDLIX homepage.
+ * Fetch and parse recently added movies from the IDLIX homepage.
+ *
+ * The new site's homepage has a "Recently Added Movies" section which
+ * serves as the equivalent of the old "Cinema XXI" section.
  * Results are cached for CACHE_TTL.cinemaxxi hours.
  * @returns {Promise&lt;Array&gt;}
  */
@@ -171,20 +187,19 @@ async function <span class="fstat-no" title="function not covered" >getCinemaxxi
 <span class="cstat-no" title="statement not covered" >  if (cache.isHit(key, CACHE_TTL.cinemaxxi)) <span class="cstat-no" title="statement not covered" >return cache.get(key);</span></span>
 &nbsp;
   const { data } = <span class="cstat-no" title="statement not covered" >await httpClient.get('/');</span>
-  const items = <span class="cstat-no" title="statement not covered" >parseCinemaxxiItems(data);</span>
+  const items = <span class="cstat-no" title="statement not covered" >parseHomepageSection(data, 'Recently Added Movies', 'movie');</span>
 <span class="cstat-no" title="statement not covered" >  cache.set(key, items);</span>
 <span class="cstat-no" title="statement not covered" >  return items;</span>
 }
 &nbsp;
-module.exports = { getFeatured, getCinemaxxi };
-&nbsp;</pre></td></tr></table></pre>
+module.exports = { getFeatured, getCinemaxxi };</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-06-19T10:30:23.356Z
+                at 2026-06-19T14:38:30.639Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

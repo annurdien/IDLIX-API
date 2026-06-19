@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/6</span>
+                <span class='fraction'>0/7</span>
             </div>
         
             
@@ -37,9 +37,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/0</span>
+                <span class='fraction'>0/2</span>
             </div>
         
             
@@ -81,11 +81,31 @@
 <a name='L16'></a><a href='#L16'>16</a>
 <a name='L17'></a><a href='#L17'>17</a>
 <a name='L18'></a><a href='#L18'>18</a>
-<a name='L19'></a><a href='#L19'>19</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -93,38 +113,48 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">'use strict';
+<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">'use strict';
 &nbsp;
-const axios = <span class="cstat-no" title="statement not covered" >require('axios');</span>
-const tough = <span class="cstat-no" title="statement not covered" >require('tough-cookie');</span>
+const cloudscraper = <span class="cstat-no" title="statement not covered" >require('cloudscraper');</span>
 const { BASE_URL } = <span class="cstat-no" title="statement not covered" >require('../config/env');</span>
 &nbsp;
-const cookieJar = <span class="cstat-no" title="statement not covered" >new tough.CookieJar();</span>
-&nbsp;
 /**
- * Pre-configured axios instance.
- * Isolated here so tests can mock it without touching globals.
+ * Pre-configured cloudscraper instance.
+ *
+ * The upstream IDLIX site is now behind Cloudflare's managed challenge,
+ * so plain axios requests are blocked with a 403. cloudscraper solves
+ * the JS challenge automatically.
+ *
+ * The exported object exposes a minimal axios-compatible `.get()` API
+ * (`url` → `Promise&lt;{ data: string }&gt;`) so that services and tests can
+ * use it as a drop-in replacement for the previous axios instance.
  */
-const httpClient = <span class="cstat-no" title="statement not covered" >axios.create({</span>
-  baseURL: BASE_URL,
-  jar: cookieJar,
-});
+const httpClient = <span class="cstat-no" title="statement not covered" >{</span>
+  /**
+   * GET a path on the upstream site.
+   * @param {string} path - Path relative to BASE_URL (e.g. "/movie").
+   * @returns {Promise&lt;{ data: string }&gt;}
+   */
+<span class="fstat-no" title="function not covered" >  ge</span>t(path) {
+    const url = <span class="cstat-no" title="statement not covered" >`${BASE_URL}${path}`;</span>
+<span class="cstat-no" title="statement not covered" >    return cloudscraper.get(url).then(<span class="fstat-no" title="function not covered" >(d</span>ata) =&gt; (<span class="cstat-no" title="statement not covered" >{ data })</span>);</span>
+  },
+};
 &nbsp;
-<span class="cstat-no" title="statement not covered" >module.exports = httpClient;</span>
-&nbsp;</pre></td></tr></table></pre>
+<span class="cstat-no" title="statement not covered" >module.exports = httpClient;</span></pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-06-19T10:30:23.356Z
+                at 2026-06-19T14:38:30.639Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
