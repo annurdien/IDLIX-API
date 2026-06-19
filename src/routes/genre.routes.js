@@ -1,10 +1,13 @@
 'use strict';
 
-const { Router }          = require('express');
-const genreController     = require('../controllers/genre.controller');
+const { Router }       = require('express');
+const genreController   = require('../controllers/genre.controller');
 const { validatePage, validateGenre } = require('../middleware/validate');
 
 const router = Router();
+
+/** GET /api/genre */
+router.get('/', genreController.index);
 
 /** GET /api/genre/series/:genre */
 router.get('/series/:genre', validateGenre, genreController.genreSeries);
@@ -17,5 +20,11 @@ router.get('/movie/:genre', validateGenre, genreController.genreMovie);
 
 /** GET /api/genre/movie/:genre/:page */
 router.get('/movie/:genre/:page', validateGenre, validatePage, genreController.genreMovie);
+
+/** GET /api/genre/:genre — unified browse, ?type=movie|series */
+router.get('/:genre', validateGenre, genreController.genreBrowse);
+
+/** GET /api/genre/:genre/:page — with pagination */
+router.get('/:genre/:page', validateGenre, validatePage, genreController.genreBrowse);
 
 module.exports = router;

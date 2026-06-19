@@ -1,10 +1,13 @@
 'use strict';
 
-const { Router }      = require('express');
-const seriesController = require('../controllers/series.controller');
-const { validatePage } = require('../middleware/validate');
+const { Router }       = require('express');
+const seriesController  = require('../controllers/series.controller');
+const { validatePage, validateMediaSlug } = require('../middleware/validate');
 
 const router = Router();
+
+/** GET /api/series */
+router.get('/', seriesController.browse);
 
 /** GET /api/series/trending */
 router.get('/trending', seriesController.trending);
@@ -26,5 +29,11 @@ router.get('/netflix', seriesController.netflixSeries);
 
 /** GET /api/series/netflix/:page */
 router.get('/netflix/:page', validatePage, seriesController.netflixSeriesPage);
+
+/** GET /api/series/:slug — detail page with rich metadata */
+router.get('/:slug', validateMediaSlug, seriesController.detail);
+
+/** GET /api/series/:slug/stream — extract stream URL via Puppeteer */
+router.get('/:slug/stream', validateMediaSlug, seriesController.stream);
 
 module.exports = router;

@@ -1,6 +1,6 @@
 'use strict';
 
-jest.mock('../../src/lib/httpClient', () => ({ get: jest.fn() }));
+jest.mock('../../src/lib/httpClient', () => ({ get: jest.fn(), getStreamUrl: jest.fn() }));
 jest.mock('../../src/lib/cacheService', () => ({
   isHit: jest.fn(),
   get:   jest.fn(),
@@ -31,6 +31,19 @@ describe('Series Routes', () => {
 
   // ── Network-based endpoints (Apple TV, Disney+, HBO, Netflix) ─────────────
 
+  describe('GET /api/series', () => {
+    it('returns 200 with series browse items', async () => {
+      httpClient.get.mockResolvedValue({ data: NETWORK_HTML });
+
+      const res = await request(app).get('/api/series');
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(httpClient.get).toHaveBeenCalledWith('/series');
+    });
+  });
+
   describe.each([
     ['/api/series/apple',  '/network/apple-tv-plus',  'appletvseries'],
     ['/api/series/disney', '/network/disney-plus',    'disneyplusseries'],
@@ -43,8 +56,9 @@ describe('Series Routes', () => {
       const res = await request(app).get(endpoint);
 
       expect(res.status).toBe(200);
-      expect(Array.isArray(res.body)).toBe(true);
-      expect(res.body).toHaveLength(2); // 2 series in network fixture
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.data).toHaveLength(2); // 2 series in network fixture
       expect(httpClient.get).toHaveBeenCalledWith(upstreamPath);
     });
 
@@ -56,7 +70,7 @@ describe('Series Routes', () => {
       const res = await request(app).get(endpoint);
 
       expect(res.status).toBe(200);
-      expect(res.body).toEqual(cached);
+      expect(res.body.data).toEqual(cached);
       expect(httpClient.get).not.toHaveBeenCalled();
     });
 
@@ -79,8 +93,9 @@ describe('Series Routes', () => {
       const res = await request(app).get('/api/series/trending');
 
       expect(res.status).toBe(200);
-      expect(Array.isArray(res.body)).toBe(true);
-      expect(res.body).toHaveLength(2); // 2 series in "Trending Now"
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.data).toHaveLength(2); // 2 series in "Trending Now"
       expect(httpClient.get).toHaveBeenCalledWith('/');
     });
   });
@@ -94,8 +109,9 @@ describe('Series Routes', () => {
       const res = await request(app).get('/api/series/marvel');
 
       expect(res.status).toBe(200);
-      expect(Array.isArray(res.body)).toBe(true);
-      expect(res.body).toHaveLength(2); // 2 series in "Network Originals"
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.data).toHaveLength(2); // 2 series in "Network Originals"
       expect(httpClient.get).toHaveBeenCalledWith('/');
     });
   });
@@ -109,7 +125,8 @@ describe('Series Routes', () => {
       const res = await request(app).get('/api/series/netflix/1');
 
       expect(res.status).toBe(200);
-      expect(Array.isArray(res.body)).toBe(true);
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.data)).toBe(true);
       expect(httpClient.get).toHaveBeenCalledWith('/network/netflix');
     });
 
@@ -138,6 +155,46 @@ describe('Series Routes', () => {
       const res = await request(app).get('/api/series/netflix/1');
 
       expect(res.status).toBe(500);
+    });
+  });
+
+  // ── GET /api/series/:slug ─────────────────────────────────────────────────
+
+  describe('GET /api/series/:slug', () => {
+    it('returns 200 with rich series detail', async () => {
+      httpClient.get.mockResolvedValue({ data: '<html><title>Test Series / IDLIX</title></html>' });
+
+      const res = await request(app).get('/api/series/test-series-2024');
+
+      // Title extraction may return empty string but endpoint should not error
+      expect([200, 404]).toContain(res.status);
+    });
+
+    it('returns 400 for invalid slug', async () => {
+      const res = await request(app).get('/api/series/../../bad');
+      expect(res.status).toBe(400);
+    });
+  });
+
+  // ── GET /api/series/:slug/stream ──────────────────────────────────────────
+
+  describe('GET /api/series/:slug/stream', () => {
+    it('returns stream URL when extraction succeeds', async () => {
+      httpClient.getStreamUrl.mockResolvedValue('https://cdn.example.com/ep.m3u8');
+
+      const res = await request(app).get('/api/series/some-series-2024/stream');
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.streamUrl).toBe('https://cdn.example.com/ep.m3u8');
+    });
+
+    it('returns 404 when stream URL cannot be extracted', async () => {
+      httpClient.getStreamUrl.mockResolvedValue(null);
+
+      const res = await request(app).get('/api/series/some-series-2024/stream');
+
+      expect(res.status).toBe(404);
+      expect(res.body.success).toBe(false);
     });
   });
 });

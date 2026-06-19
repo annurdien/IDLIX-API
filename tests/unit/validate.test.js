@@ -1,6 +1,6 @@
 'use strict';
 
-const { validatePage, validateGenre } = require('../../src/middleware/validate');
+const { validatePage, validateGenre, validateMediaSlug, validateSearchQuery } = require('../../src/middleware/validate');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -150,6 +150,98 @@ describe('validateGenre middleware', () => {
     const res  = makeRes();
     const next = makeNext();
     validateGenre(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+});
+
+// ── validateMediaSlug ──────────────────────────────────────────────────────────
+
+describe('validateMediaSlug middleware', () => {
+  it('calls next() for a valid slug like "per-aspera-ad-astra-2026"', () => {
+    const req  = makeReq({ slug: 'per-aspera-ad-astra-2026' });
+    const res  = makeRes();
+    const next = makeNext();
+    validateMediaSlug(req, res, next);
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls next() for a single-word slug "batman"', () => {
+    const req  = makeReq({ slug: 'batman' });
+    const res  = makeRes();
+    const next = makeNext();
+    validateMediaSlug(req, res, next);
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns 400 for path traversal "../../etc"', () => {
+    const req  = makeReq({ slug: '../../etc' });
+    const res  = makeRes();
+    const next = makeNext();
+    validateMediaSlug(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 for empty slug', () => {
+    const req  = makeReq({ slug: '' });
+    const res  = makeRes();
+    const next = makeNext();
+    validateMediaSlug(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  it('returns 400 for slug with spaces', () => {
+    const req  = makeReq({ slug: 'some movie 2024' });
+    const res  = makeRes();
+    const next = makeNext();
+    validateMediaSlug(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+});
+
+// ── validateSearchQuery ───────────────────────────────────────────────────────
+
+describe('validateSearchQuery middleware', () => {
+  it('calls next() for a valid query "batman"', () => {
+    const req  = { query: { q: 'batman' } };
+    const res  = makeRes();
+    const next = makeNext();
+    validateSearchQuery(req, res, next);
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(req.query.q).toBe('batman');
+  });
+
+  it('trims whitespace from the query', () => {
+    const req  = { query: { q: '  batman  ' } };
+    const res  = makeRes();
+    const next = makeNext();
+    validateSearchQuery(req, res, next);
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(req.query.q).toBe('batman');
+  });
+
+  it('returns 400 for a single-character query "a"', () => {
+    const req  = { query: { q: 'a' } };
+    const res  = makeRes();
+    const next = makeNext();
+    validateSearchQuery(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when query is missing', () => {
+    const req  = { query: {} };
+    const res  = makeRes();
+    const next = makeNext();
+    validateSearchQuery(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  it('returns 400 for only whitespace "   "', () => {
+    const req  = { query: { q: '   ' } };
+    const res  = makeRes();
+    const next = makeNext();
+    validateSearchQuery(req, res, next);
     expect(res.status).toHaveBeenCalledWith(400);
   });
 });

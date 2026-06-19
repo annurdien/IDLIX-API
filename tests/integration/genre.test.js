@@ -1,6 +1,6 @@
 'use strict';
 
-jest.mock('../../src/lib/httpClient', () => ({ get: jest.fn() }));
+jest.mock('../../src/lib/httpClient', () => ({ get: jest.fn(), getStreamUrl: jest.fn() }));
 jest.mock('../../src/lib/cacheService', () => ({
   isHit: jest.fn(),
   get:   jest.fn(),
@@ -37,9 +37,10 @@ describe('Genre Routes', () => {
       const res = await request(app).get('/api/genre/movie/action');
 
       expect(res.status).toBe(200);
-      expect(Array.isArray(res.body)).toBe(true);
-      expect(res.body).toHaveLength(1);
-      expect(res.body[0].title).toBe('Action Movie 1');
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.data).toHaveLength(1);
+      expect(res.body.data[0].title).toBe('Action Movie 1');
       expect(httpClient.get).toHaveBeenCalledWith('/genre/action');
     });
 
@@ -68,7 +69,7 @@ describe('Genre Routes', () => {
       const res = await request(app).get('/api/genre/movie/action');
 
       expect(res.status).toBe(200);
-      expect(res.body).toEqual(cached);
+      expect(res.body.data).toEqual(cached);
       expect(httpClient.get).not.toHaveBeenCalled();
     });
 
@@ -103,9 +104,10 @@ describe('Genre Routes', () => {
       const res = await request(app).get('/api/genre/series/action');
 
       expect(res.status).toBe(200);
-      expect(Array.isArray(res.body)).toBe(true);
-      expect(res.body).toHaveLength(1);
-      expect(res.body[0].title).toBe('Action Series 1');
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.data).toHaveLength(1);
+      expect(res.body.data[0].title).toBe('Action Series 1');
     });
 
     it('returns 200 with series for page 1', async () => {

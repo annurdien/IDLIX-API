@@ -3,16 +3,70 @@
 const cheerio = require('cheerio');
 const { BASE_URL } = require('../config/env');
 
+function stripProtocolHost(value) {
+  return String(value || '').replace(/^https?:\/\/[^/]+/i, '');
+}
+
+function getPathname(value) {
+  const stripped = stripProtocolHost(value);
+  return stripped.startsWith('/') ? stripped : `/${stripped}`;
+}
+
+function inferHrefType(href) {
+  const path = getPathname(href);
+  if (path.startsWith('/movie/')) return 'movie';
+  if (path.startsWith('/series/')) return 'series';
+  return null;
+}
+
+function parseTitleYear(title) {
+  const rawTitle = String(title || '').trim();
+  if (!rawTitle) return { title: '', year: null };
+
+  const yearMatch = rawTitle.match(/\((\d{4})\)\s*$/);
+  if (!yearMatch) return { title: rawTitle, year: null };
+
+  return {
+    title: rawTitle.replace(/\s*\(\d{4}\)\s*$/, '').trim(),
+    year: parseInt(yearMatch[1], 10),
+  };
+}
+
+function parseKeywords(value) {
+  if (Array.isArray(value)) {
+    return value.map(keyword => String(keyword).trim()).filter(Boolean);
+  }
+  if (typeof value === 'string') {
+    return value.split(',').map(keyword => keyword.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+function safeJsonParse(raw) {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function toArray(value) {
+  if (value == null) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
 /**
  * Normalize a relative/absolute href into a link object.
  * @private
  */
-function normalizeLink(href) {
+function normalizeLink(href, thumbnail = null) {
   if (!href) return null;
-  const url = href.startsWith('http') ? href : `${BASE_URL}${href}`;
+  const url = href.startsWith('http') ? href : `${BASE_URL}${href.startsWith('/') ? href : `/${href}`}`;
   return {
-    endpoint: href.replace(/^\//, ''),
+    endpoint: getPathname(href).replace(/^\//, ''),
     url,
+    thumbnail,
   };
 }
 
@@ -61,9 +115,34 @@ function extractCardMeta($, card) {
   // Type badge (Movie/TV) - first neutral badge sometimes holds it
   const typeText = $(card).find('.content-badge--neutral').first().text().trim();
   if (/^movie$/i.test(typeText)) meta.type = 'movie';
-  else if (/^tv$/i.test(typeText)) meta.type = 'series';
+  else if (/^tv$/i.test(typeText) || /^tv series$/i.test(typeText) || /^series$/i.test(typeText)) meta.type = 'series';
+
+  if (!meta.type) {
+    const href = $(card).attr('href') || $(card).find('a[href]').attr('href') || '';
+    meta.type = inferHrefType(href);
+  }
 
   return meta;
+}
+
+/**
+ * Extract the most likely visible title from a content card.
+ * @private
+ */
+function extractCardTitle($, card) {
+  const candidates = [
+    $(card).find('h3').first().text(),
+    $(card).attr('aria-label'),
+    $(card).attr('title'),
+    $(card).find('img').first().attr('alt'),
+  ];
+
+  for (const candidate of candidates) {
+    const value = String(candidate || '').trim();
+    if (value) return value;
+  }
+
+  return '';
 }
 
 /**
@@ -81,6 +160,7 @@ function parseMediaItems(html, type) {
   const $ = cheerio.load(html);
   const items = [];
   const seen = new Set();
+  const typeFilter = type && type !== 'all' ? type : null;
 
   // 1) Try content cards first (rich data)
   $('a.content-card').each((_, card) => {
@@ -90,36 +170,30 @@ function parseMediaItems(html, type) {
     const isMovie = href.startsWith('/movie/');
     const isSeries = href.startsWith('/series/');
     if (!isMovie && !isSeries) return;
-    if (type === 'movie' && !isMovie) return;
-    if (type === 'series' && !isSeries) return;
+    if (typeFilter === 'movie' && !isMovie) return;
+    if (typeFilter === 'series' && !isSeries) return;
 
     const endpoint = href.replace(/^\//, '');
     if (seen.has(endpoint)) return;
     seen.add(endpoint);
 
-    // Title from <h3>, strip trailing year if present for title field
-    const $h3 = $(card).find('h3').first();
-    const rawTitle = $h3.text().trim() || '';
-    let title = rawTitle;
-    let year = null;
-    const yearMatch = rawTitle.match(/\((\d{4})\)\s*$/);
-    if (yearMatch) {
-      title = rawTitle.replace(/\s*\(\d{4}\)\s*$/, '').trim();
-      year = parseInt(yearMatch[1], 10);
-    }
+    const { title, year } = parseTitleYear(extractCardTitle($, card));
 
     const meta = extractCardMeta($, card);
     const thumbnail = extractCardThumbnail($, card);
+    const slug = endpoint.split('/').slice(1).join('/');
 
     items.push({
       title,
+      originalTitle: title,
       year,
       type: meta.type || (isMovie ? 'movie' : 'series'),
       quality: meta.quality,
       rating: meta.rating,
       season: meta.season,
       poster: thumbnail,
-      link: normalizeLink(href),
+      slug,
+      link: normalizeLink(href, thumbnail),
     });
   });
 
@@ -139,15 +213,18 @@ function parseMediaItems(html, type) {
       const endpoint = href.replace(/^\//, '');
       if (seen.has(endpoint)) return;
       seen.add(endpoint);
+      const slug = endpoint.split('/').slice(1).join('/');
 
       items.push({
         title,
+        originalTitle: title,
         year: null,
         type: isMovie ? 'movie' : 'series',
         quality: null,
         rating: null,
         season: null,
         poster: null,
+        slug,
         link: normalizeLink(href),
       });
     });
@@ -168,6 +245,7 @@ function parseHomepageSection(html, sectionTitle, type) {
   const $ = cheerio.load(html);
   const items = [];
   const seen = new Set();
+  const typeFilter = type && type !== 'all' ? type : null;
 
   $('section.sr-only h2').each((_, el) => {
     if ($(el).text().trim() !== sectionTitle) return;
@@ -181,21 +259,24 @@ function parseHomepageSection(html, sectionTitle, type) {
       const isMovie = href.startsWith('/movie/');
       const isSeries = href.startsWith('/series/');
       if (!isMovie && !isSeries) return;
-      if (type === 'movie' && !isMovie) return;
-      if (type === 'series' && !isSeries) return;
+      if (typeFilter === 'movie' && !isMovie) return;
+      if (typeFilter === 'series' && !isSeries) return;
 
       const endpoint = href.replace(/^\//, '');
       if (seen.has(endpoint)) return;
       seen.add(endpoint);
+      const slug = endpoint.split('/').slice(1).join('/');
 
       items.push({
         title,
+        originalTitle: title,
         year: null,
         type: isMovie ? 'movie' : 'series',
         quality: null,
         rating: null,
         season: null,
         poster: null,
+        slug,
         link: normalizeLink(href),
       });
     });
@@ -226,8 +307,10 @@ function parseHomepageSections(html) {
       if (!href.startsWith('/movie/') && !href.startsWith('/series/')) return;
       items.push({
         title: text,
+        originalTitle: text,
         type: href.startsWith('/movie/') ? 'movie' : 'series',
         link: normalizeLink(href),
+        slug: href.split('/').filter(Boolean).pop() || null,
       });
     });
     if (items.length) sections[title] = items;
@@ -260,7 +343,6 @@ function parseBrowsePage(html, type) {
   });
 
   // Also check Next.js flight data for pagination markers
-  const flightData = [];
   $('script').each((_, el) => {
     const txt = $(el).html() || '';
     const matches = txt.match(/"page":\s*(\d+)/g) || [];
@@ -283,6 +365,62 @@ function parseBrowsePage(html, type) {
 }
 
 /**
+ * Parse a category listing page into standardized entries.
+ *
+ * @param {string} html
+ * @param {'country'|'year'|'network'|'genre'} category
+ * @returns {Array<Object>}
+ */
+function parseCategoryItems(html, category) {
+  const $ = cheerio.load(html);
+  const items = [];
+  const seen = new Set();
+  const selectors = {
+    country: 'a[href^="/country/"]',
+    year: 'a[href^="/year/"]',
+    network: 'a[href^="/network/"]',
+    genre: 'a[href^="/genre/"]',
+  };
+
+  $(selectors[category] || 'a[href]').each((_, el) => {
+    const href = $(el).attr('href') || '';
+    const title = ($(el).text().trim() || $(el).attr('aria-label') || $(el).attr('title') || '').trim();
+    if (!href || !title) return;
+
+    const endpoint = href.replace(/^\//, '');
+    if (seen.has(endpoint)) return;
+    seen.add(endpoint);
+
+    const slug = endpoint.split('/').slice(1).join('/');
+    const item = {
+      title,
+      originalTitle: title,
+      category,
+      slug,
+      value: slug,
+      link: normalizeLink(href),
+    };
+
+    if (category === 'country') {
+      item.code = slug.toUpperCase();
+      item.value = item.code;
+    } else if (category === 'year') {
+      const year = parseInt(slug, 10);
+      item.year = Number.isNaN(year) ? null : year;
+      item.value = item.year;
+    } else if (category === 'network') {
+      item.network = slug;
+    } else if (category === 'genre') {
+      item.genre = slug;
+    }
+
+    items.push(item);
+  });
+
+  return items;
+}
+
+/**
  * Parse a movie/series detail page. Extracts rich metadata from JSON-LD
  * structured data and the visible HTML.
  *
@@ -299,6 +437,7 @@ function parseDetail(html) {
     runtime: null,
     runtimeMinutes: null,
     overview: null,
+    keywords: [],
     poster: null,
     backdrop: null,
     logo: null,
@@ -313,6 +452,9 @@ function parseDetail(html) {
     cast: [],
     productionCompanies: [],
     trailer: null,
+    watchUrl: null,
+    playerUrl: null,
+    breadcrumbs: [],
     recommendations: [],
     streamUrl: null,
     link: null,
@@ -320,19 +462,23 @@ function parseDetail(html) {
 
   // 1) JSON-LD structured data (primary source)
   $('script[type="application/ld+json"]').each((_, el) => {
-    const raw = $(el).html();
-    if (!raw) return;
-    let data;
-    try {
-      data = JSON.parse(raw);
-    } catch {
-      return;
-    }
+    const data = safeJsonParse($(el).html());
+    if (!data) return;
     const arr = Array.isArray(data) ? data : [data];
     for (const obj of arr) {
       if (!obj || typeof obj !== 'object') continue;
+      if (obj['@type'] === 'BreadcrumbList' && Array.isArray(obj.itemListElement)) {
+        detail.breadcrumbs = obj.itemListElement.map(item => ({
+          position: item.position || null,
+          name: item.name || null,
+          item: item.item || null,
+        })).filter(item => item.name);
+        continue;
+      }
+
       if (obj['@type'] === 'Movie' || obj['@type'] === 'TVSeries') {
         detail.title = obj.name || detail.title;
+        detail.originalTitle = obj.alternateName || detail.originalTitle || detail.title;
         detail.overview = obj.description || detail.overview;
         detail.releaseDate = obj.datePublished || detail.releaseDate;
         if (obj.duration) {
@@ -372,6 +518,18 @@ function parseDetail(html) {
         if (obj.trailer && obj.trailer.embedUrl) {
           detail.trailer = obj.trailer.embedUrl;
         }
+        if (obj.keywords) {
+          detail.keywords = parseKeywords(obj.keywords);
+        }
+        const actions = toArray(obj.potentialAction);
+        const watchAction = actions.find(action => action && action['@type'] === 'WatchAction');
+        const action = watchAction || actions[0];
+        const target = action && action.target;
+        if (target) {
+          if (typeof target === 'string') detail.watchUrl = target;
+          else if (target.urlTemplate) detail.watchUrl = target.urlTemplate;
+          else if (target.url) detail.watchUrl = target.url;
+        }
         if (obj.url) detail.link = normalizeLink(obj.url);
         detail.type = obj['@type'] === 'Movie' ? 'movie' : 'series';
       }
@@ -385,15 +543,47 @@ function parseDetail(html) {
     if (pageTitle) detail.title = pageTitle;
   }
 
+  if (!detail.originalTitle) {
+    detail.originalTitle = detail.title;
+  }
+
   // Year from title or meta
   if (!detail.year) {
     const m = detail.title && detail.title.match(/\((\d{4})\)/);
     if (m) detail.year = parseInt(m[1], 10);
   }
 
+  if (!detail.year && detail.releaseDate) {
+    const releaseYear = String(detail.releaseDate).match(/(19|20)\d{2}/);
+    if (releaseYear) detail.year = parseInt(releaseYear[0], 10);
+  }
+
+  if (!detail.year) {
+    const metaRelease = $('meta[property="video:release_date"]').attr('content') || '';
+    const releaseYear = metaRelease.match(/(19|20)\d{2}/);
+    if (releaseYear) detail.year = parseInt(releaseYear[0], 10);
+  }
+
   // Poster/backdrop from og:image
   if (!detail.backdrop) {
     detail.backdrop = $('meta[property="og:image"]').attr('content') || null;
+  }
+
+  if (!detail.poster) {
+    detail.poster = detail.backdrop;
+  }
+
+  if (!detail.link) {
+    const canonical = $('link[rel="canonical"]').attr('href') || $('meta[property="og:url"]').attr('content') || null;
+    if (canonical) detail.link = normalizeLink(canonical);
+  }
+
+  if (!detail.playerUrl && detail.link && detail.link.url) {
+    detail.playerUrl = `${detail.link.url}?play=1`;
+  }
+
+  if (!detail.watchUrl) {
+    detail.watchUrl = detail.playerUrl;
   }
 
   // Logo image (the title logo)
@@ -409,6 +599,12 @@ function parseDetail(html) {
       const num = parseFloat(txt);
       if (!isNaN(num) && detail.rating === null) detail.rating = num;
     });
+  }
+
+  if (detail.rating === null) {
+    const ratingText = $('meta[property="ratingValue"]').attr('content');
+    const rating = ratingText ? parseFloat(ratingText) : NaN;
+    if (!isNaN(rating)) detail.rating = rating;
   }
 
   // Quality badge
@@ -433,6 +629,30 @@ function parseDetail(html) {
     });
   }
 
+  if (!detail.keywords.length) {
+    detail.keywords = parseKeywords($('meta[name="keywords"]').attr('content') || '');
+  }
+
+  $('dt').each((_, el) => {
+    const label = $(el).text().trim().toLowerCase();
+    const value = $(el).next('dd').text().trim();
+    if (!value) return;
+
+    if (label === 'runtime' && !detail.runtime) {
+      detail.runtime = value;
+      const runtimeMatch = value.match(/(\d+)\s*h(?:\s*(\d+)\s*m)?|((\d+)\s*min)/i);
+      if (runtimeMatch) {
+        const hours = parseInt(runtimeMatch[1] || 0, 10) || 0;
+        const minutes = parseInt(runtimeMatch[2] || runtimeMatch[4] || 0, 10) || 0;
+        detail.runtimeMinutes = hours * 60 + minutes;
+      }
+    }
+
+    if (label === 'country' && !detail.country) {
+      detail.country = value;
+    }
+  });
+
   // Director from "Director :" paragraph
   if (!detail.director) {
     const dirText = $('p:contains("Director")').text();
@@ -446,24 +666,17 @@ function parseDetail(html) {
   // 3) Recommendations ("More Like This")
   const recs = [];
   const seen = new Set();
-  $('section a.content-card').each((_, card) => {
+  $('section a.content-card, a.content-card').each((_, card) => {
     const href = $(card).attr('href') || '';
     if (!href) return;
-    if (!href.startsWith('/movie/') && !href.startsWith('/series/')) return;
+    if (!inferHrefType(href)) return;
     const endpoint = href.replace(/^\//, '');
     if (seen.has(endpoint)) return;
     seen.add(endpoint);
 
-    const $h3 = $(card).find('h3').first();
-    const rawTitle = $h3.text().trim() || '';
-    let title = rawTitle;
-    let year = null;
-    const yearMatch = rawTitle.match(/\((\d{4})\)\s*$/);
-    if (yearMatch) {
-      title = rawTitle.replace(/\s*\(\d{4}\)\s*$/, '').trim();
-      year = parseInt(yearMatch[1], 10);
-    }
+    const { title, year } = parseTitleYear(extractCardTitle($, card));
     const meta = extractCardMeta($, card);
+    const poster = extractCardThumbnail($, card);
 
     recs.push({
       title,
@@ -472,8 +685,9 @@ function parseDetail(html) {
       quality: meta.quality,
       rating: meta.rating,
       season: meta.season,
-      poster: extractCardThumbnail($, card),
-      link: normalizeLink(href),
+      poster,
+      link: normalizeLink(href, poster),
+      slug: endpoint.split('/').slice(1).join('/'),
     });
   });
   detail.recommendations = recs;
@@ -487,20 +701,21 @@ function parseDetail(html) {
 /**
  * Best-effort extraction of a stream URL from a detail/player page.
  *
- * The IDLIX player uses Shaka Player with a blob: URL that is generated
- * client-side from an HLS/DASH manifest fetched via an internal API. The
- * manifest URL is not present in the server-rendered HTML; it is fetched
- * after a 5-second wait via an authenticated XHR to a provider endpoint.
+ * Accepts an optional `interceptedUrl` captured by the Puppeteer network
+ * interceptor — this takes priority over HTML scanning since the real manifest
+ * URL is fetched client-side after a 5-second countdown and cannot be found
+ * in the static server-rendered HTML.
  *
- * This function scans the HTML and inline scripts for any direct stream
- * URLs (m3u8, mpd, or mp4) that may be embedded. If none are found, it
- * returns null — the stream URL cannot be reliably obtained without
- * executing the site's JavaScript and passing Cloudflare's challenge.
+ * Falls back to scanning inline scripts and data attributes for direct
+ * m3u8/mpd/mp4 URLs if no intercepted URL is provided.
  *
  * @param {string} html
+ * @param {string|null} [interceptedUrl] - URL captured by Puppeteer interceptor.
  * @returns {string|null}
  */
-function parseStreamUrl(html) {
+function parseStreamUrl(html, interceptedUrl = null) {
+  // Puppeteer-intercepted URL always wins
+  if (interceptedUrl) return interceptedUrl;
   if (!html) return null;
 
   // Look for direct media URLs in inline scripts or data attributes
@@ -508,7 +723,8 @@ function parseStreamUrl(html) {
     /https?:\/\/[^\s"'<>]+\.m3u8[^\s"'<>]*/i,
     /https?:\/\/[^\s"'<>]+\.mpd[^\s"'<>]*/i,
     /https?:\/\/[^\s"'<>]+\.mp4[^\s"'<>]*/i,
-    /["'](https?:\/\/[^\s"'<>]*(?:stream|play|video|media|hls|dash)[^\s"'<>]*)["']/i,
+    /https?:\/\/[^\s"'<>]+\/(?:api\/)?(?:stream|play|video|media|hls|dash|manifest)[^\s"'<>]*/i,
+    /["'](https?:\/\/[^\s"'<>]*(?:stream|play|video|media|hls|dash)[^\s"'<>]*)['"]/i,
   ];
 
   for (const p of patterns) {
@@ -531,11 +747,106 @@ function parseStreamUrl(html) {
   return null;
 }
 
+/**
+ * Parse search results page (/search?q=...).
+ *
+ * @param {string} html
+ * @returns {Array<Object>}
+ */
+function parseSearchResults(html) {
+  // The search page renders content cards the same way as listing pages
+  return parseMediaItems(html, null);
+}
+
+/**
+ * Parse the leaderboard page (/leaderboard).
+ * Returns an array of ranked media items, preserving rank order.
+ *
+ * @param {string} html
+ * @returns {Array<Object>}
+ */
+function parseLeaderboard(html) {
+  const $ = cheerio.load(html);
+  const items = [];
+  const seen = new Set();
+
+  // Leaderboard items may have a rank number visible on the card
+  $('a.content-card').each((index, card) => {
+    const href = $(card).attr('href') || '';
+    if (!href) return;
+    const isMovie = href.startsWith('/movie/');
+    const isSeries = href.startsWith('/series/');
+    if (!isMovie && !isSeries) return;
+
+    const endpoint = href.replace(/^\//, '');
+    if (seen.has(endpoint)) return;
+    seen.add(endpoint);
+
+    const { title, year } = parseTitleYear(extractCardTitle($, card));
+    const meta = extractCardMeta($, card);
+    const poster = extractCardThumbnail($, card);
+
+    // Try to find the rank number badge (leaderboard cards have a big number)
+    const rankText = $(card).find('span.text-2xl, span.text-3xl').first().text().trim();
+    const rank = rankText && /^\d+$/.test(rankText) ? parseInt(rankText, 10) : index + 1;
+
+    items.push({
+      rank,
+      title,
+      originalTitle: title,
+      year,
+      type: meta.type || (isMovie ? 'movie' : 'series'),
+      quality: meta.quality,
+      rating: meta.rating,
+      season: meta.season,
+      poster,
+      slug: endpoint.split('/').slice(1).join('/'),
+      link: normalizeLink(href, poster),
+    });
+  });
+
+  // Sort by rank in case cards were unordered
+  items.sort((a, b) => a.rank - b.rank);
+
+  // Fallback: sr-only list
+  if (items.length === 0) {
+    $('section.sr-only ul li a').each((index, el) => {
+      const href = $(el).attr('href') || '';
+      const title = $(el).text().trim();
+      if (!title || !href) return;
+      if (!href.startsWith('/movie/') && !href.startsWith('/series/')) return;
+
+      const endpoint = href.replace(/^\//, '');
+      if (seen.has(endpoint)) return;
+      seen.add(endpoint);
+
+      items.push({
+        rank: index + 1,
+        title,
+        originalTitle: title,
+        year: null,
+        type: href.startsWith('/movie/') ? 'movie' : 'series',
+        quality: null,
+        rating: null,
+        season: null,
+        poster: null,
+        slug: endpoint.split('/').slice(1).join('/'),
+        link: normalizeLink(href),
+      });
+    });
+  }
+
+  return items;
+}
+
 module.exports = {
+  parseCategoryItems,
   parseMediaItems,
   parseHomepageSection,
   parseHomepageSections,
   parseBrowsePage,
   parseDetail,
   parseStreamUrl,
+  parseSearchResults,
+  parseLeaderboard,
 };

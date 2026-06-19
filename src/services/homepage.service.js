@@ -3,13 +3,10 @@
 const httpClient = require('../lib/httpClient');
 const cache      = require('../lib/cacheService');
 const { CACHE_TTL } = require('../config/env');
-const { parseHomepageSection } = require('../lib/scraper');
+const { parseHomepageSection, parseHomepageSections, parseMediaItems } = require('../lib/scraper');
 
 /**
  * Fetch and parse featured movies from the IDLIX homepage.
- *
- * The new site's homepage has a "Trending Now" section which serves as
- * the equivalent of the old "featured" section.
  * Results are cached for CACHE_TTL.featured hours.
  * @returns {Promise<Array>}
  */
@@ -25,9 +22,6 @@ async function getFeatured() {
 
 /**
  * Fetch and parse recently added movies from the IDLIX homepage.
- *
- * The new site's homepage has a "Recently Added Movies" section which
- * serves as the equivalent of the old "Cinema XXI" section.
  * Results are cached for CACHE_TTL.cinemaxxi hours.
  * @returns {Promise<Array>}
  */
@@ -41,4 +35,34 @@ async function getCinemaxxi() {
   return items;
 }
 
-module.exports = { getFeatured, getCinemaxxi };
+/**
+ * Fetch and return all homepage content as a flat array of items.
+ * Combines Trending Now, Recently Added Movies, and Network Originals sections.
+ * @returns {Promise<Array>}
+ */
+async function getHome() {
+  const key = 'home.all';
+  if (cache.isHit(key, CACHE_TTL.home)) return cache.get(key);
+
+  const { data } = await httpClient.get('/');
+  const items = parseMediaItems(data, null);
+  cache.set(key, items);
+  return items;
+}
+
+/**
+ * Fetch and return homepage content organised by section name.
+ * Returns an object keyed by section title (e.g. "Trending Now", "Recently Added Movies").
+ * @returns {Promise<Object>}
+ */
+async function getHomeSections() {
+  const key = 'home.sections';
+  if (cache.isHit(key, CACHE_TTL.home)) return cache.get(key);
+
+  const { data } = await httpClient.get('/');
+  const sections = parseHomepageSections(data);
+  cache.set(key, sections);
+  return sections;
+}
+
+module.exports = { getFeatured, getCinemaxxi, getHome, getHomeSections };

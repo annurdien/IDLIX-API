@@ -1,199 +1,211 @@
-# IDLIX Scrapper
+# IDLIX API v3
 
-[![Support via Trakteer](https://img.shields.io/badge/Support-me!-green)](https://trakteer.id/annurdien)
 [![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/annurdien/IDLIX-API/blob/main/LICENSE)
 
-<p align="center"><img src="https://cdn.discordapp.com/attachments/765606831229370441/849498134895263744/maxresdefault.png" /></p>
+A REST API that scrapes `https://z2.idlixku.com/` using **Puppeteer + stealth plugin** to bypass Cloudflare and extract all available content data.
 
-## About
+## Features
 
-IDLIX Scrapper, IDLIX API
+- ✅ Cloudflare bypass via `puppeteer-extra` + `stealth-plugin`
+- ✅ Full detail pages — rich metadata from JSON-LD structured data
+- ✅ Stream URL extraction via Puppeteer network interception
+- ✅ Search endpoint
+- ✅ Leaderboard endpoint
+- ✅ All category pages: Movies, TV Series, Genres, Countries, Years, Networks
+- ✅ Consistent `{ success, data, pagination, filters }` response envelope
+- ✅ In-memory TTL cache
 
-## Hak Cipta
+## Installation
 
-Projek ini dilindungi oleh **MIT** yang dimana penggunanya boleh menggunakan, mendistribusikan, menampilkan, bahkan
-memodifikasi projek ini ke publik. **Namun, biarkan lisensi ini sebagai credit/apresiasi selama penggunaan.**
-
-## Creative Commons Licenses
-
-**This license lets others remix, tweak, and build upon your work even for commercial purposes, as long as they credit you and license their new creations under the identical terms.** This license is often compared to “copyleft” free and open source software licenses. All new works based on yours will carry the same license, so any derivatives will also allow commercial use. This is the license used by Wikipedia, and is recommended for materials that would benefit from incorporating content from Wikipedia and similarly licensed projects
-
-[![Creative Commons](https://i.creativecommons.org/l/by-sa/4.0/88x31.png)](https://creativecommons.org/licenses/by-sa/4.0/ "Redirect to Creative Commons")
-
-### Instalasi
-```properties
--- Install node.js (V14 ke atas)
-
-$ git clone https://github.com/annurdien/IDLIX-API.git
-$ cd IDLIX-API
-$ npm install
-$ npm start
+```bash
+git clone https://github.com/annurdien/IDLIX-API.git
+cd IDLIX-API
+npm install
+cp .env.example .env
+npm start
 ```
 
+> **Requirements:** Node.js 18+ (Puppeteer downloads Chromium automatically)
 
-## Penggunaan
+---
 
-**API** **PATH** = https://idlix-api.herokuapp.com/api/
+## API Reference
 
-## Status
+**Base URL:** `http://localhost:3000/api`
 
-Get Status IDLIX
-
-```
-/
-```
-
-**Example** : https://idlix-api.herokuapp.com/api/
-
-
-## Featured Movie
-
-Get Featured Movie
-
-```
-/featured
+All responses follow the envelope:
+```json
+{
+  "success": true,
+  "data": [...],
+  "pagination": { "currentPage": 1, "totalPages": 5, "hasNext": true },
+  "filters": { "type": "movie", "genre": "action" }
+}
 ```
 
-**Example** : https://idlix-api.herokuapp.com/api/featured
+---
 
+### General
 
-## CinemaXXI
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | API status |
+| GET | `/home` | All homepage content (flat array) |
+| GET | `/home/sections` | Homepage content grouped by section |
+| GET | `/featured` | Trending Now content |
+| GET | `/cinemaxxi` | Recently Added Movies |
 
-```
-/cinemaxxi
-```
+---
 
-**Example** : https://idlix-api.herokuapp.com/api/cinemaxxi
+### Search
 
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/search?q=batman` | Search movies & series |
 
-## Movie
+---
 
-```
-/movie/<endpoint>
-```
-**Example** : https://idlix-api.herokuapp.com/api/movie/mcu
+### Leaderboard
 
-## Get Marvel Cenimatic Universe
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/leaderboard` | Top ranked content |
 
-```
-/movie/mcu
-```
+---
 
-**Example** : https://idlix-api.herokuapp.com/api/movie/mcu
+### Movies
 
-## Get Trending Movie
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/movie` | Browse all movies |
+| GET | `/movie/trending` | Trending movies |
+| GET | `/movie/trending/:page` | Trending movies (page N) |
+| GET | `/movie/mcu` | Collections / curated picks |
+| GET | `/movie/:slug` | Movie detail — full metadata |
+| GET | `/movie/:slug/stream` | Extract stream URL (Puppeteer) |
 
-```
-/movie/trending
-```
-**Example** : https://idlix-api.herokuapp.com/api/movie/trending
-
-
-## Get Trending Movie Pages
-
-> **Note:** The new IDLIX site no longer supports pagination. Page values greater than 1 will return a `404` error.
-
-```
-/movie/trending/:page<number>
-```
-**Example** : https://idlix-api.herokuapp.com/api/movie/trending/2
-
-
-## Series
-
-```
-/series/<endpoint>
-```
-**Example** : https://idlix-api.herokuapp.com/api/series/trending
-
-
-## Get Trending Series 
-
-```
-/series/trending
-```
-
-**Example** : https://idlix-api.herokuapp.com/api/series/trending
-
-## Get Marvel Series
-
-```
-/series/marvel
-```
-**Example** : https://idlix-api.herokuapp.com/api/series/marvel
-
-## Get Apple TV Series
-
-```
-/series/apple
-```
-**Example** : https://idlix-api.herokuapp.com/api/series/apple
-
-
-## Get Disney Series
-
-```
-/series/disney
-```
-**Example** : https://idlix-api.herokuapp.com/api/series/disney
-
-## Get HBO Series
-
-```
-/series/hbo
-```
-**Example** : https://idlix-api.herokuapp.com/api/series/hbo
-
-
-## Get Netflix Series
-
-```
-/series/netflix
-```
-**Example** : https://idlix-api.herokuapp.com/api/series/netflix
-
-## Get Netflix Pages
-
-> **Note:** The new IDLIX site no longer supports pagination. Page values greater than 1 will return a `404` error.
-
-```
-/series/netflix/:page<number>
-```
-**Example** : https://idlix-api.herokuapp.com/api/series/netflix/2
-
-## Genre 
-
-```
-/genre/<endpoint>/:genre/
-```
-**Example Series** : https://idlix-api.herokuapp.com/api/genre/series/action
-
-**Example Movie** : https://idlix-api.herokuapp.com/api/genre/movie/action
-
-**List Available Genre**
-
-|  1 | 2  | 3  | 4  | 5  |
-| ------------ | ------------ | ------------ | ------------ | ------------ |
-| drama-korea  |  action |  adventure | anime  |   animation|
-|  comedy |  crime |  drama |  family |  fantasy |
-| history  | mystery  |  horror |  kids | thriller  |
-|science-fiction|war|||||
-
-
-## Get Genre Pages
-
-> **Note:** The new IDLIX site no longer supports pagination. Page values greater than 1 will return a `404` error.
-
-```
-/genre/<endpoint>/:genre/:pages<number>
+**Example detail response:**
+```json
+{
+  "success": true,
+  "data": {
+    "title": "Per Aspera Ad Astra",
+    "year": 2026,
+    "type": "movie",
+    "runtime": "PT111M",
+    "runtimeMinutes": 111,
+    "overview": "...",
+    "poster": "https://image.tmdb.org/...",
+    "backdrop": "https://image.tmdb.org/...",
+    "genres": ["Drama", "Adventure", "Science Fiction"],
+    "country": "China",
+    "countryCode": "CN",
+    "language": "Chinese",
+    "director": { "name": "Han Yan", "url": "..." },
+    "cast": [{ "name": "Dylan Wang", "character": "Xu Tianbiao", "image": "..." }],
+    "trailer": "https://www.youtube.com/watch?v=...",
+    "watchUrl": "https://z2.idlixku.com/movie/per-aspera-ad-astra-2026?play=1",
+    "streamUrl": null,
+    "keywords": ["virtual reality", "dream realm"],
+    "recommendations": [...]
+  }
+}
 ```
 
-**Example Series** : https://idlix-api.herokuapp.com/api/genre/series/action/4
+---
 
-**Example Movie** : https://idlix-api.herokuapp.com/api/genre/movie/action/4
+### TV Series
 
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/series` | Browse all series |
+| GET | `/series/trending` | Trending series |
+| GET | `/series/marvel` | Network Originals section |
+| GET | `/series/apple` | Apple TV+ series |
+| GET | `/series/disney` | Disney+ series |
+| GET | `/series/hbo` | HBO series |
+| GET | `/series/netflix` | Netflix series |
+| GET | `/series/netflix/:page` | Netflix series (page N) |
+| GET | `/series/:slug` | Series detail — full metadata |
+| GET | `/series/:slug/stream` | Extract stream URL (Puppeteer) |
 
-<p align="center"><h1>Selamat Mencoba!</h1><br></p>
-<p align="center"><img src="https://cdn.discordapp.com/attachments/765606831229370441/849498885247336458/bf195edcba94141bbdf0658a615aa81a.gif" /></p>
+---
+
+### Genres
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/genre` | List all genres |
+| GET | `/genre/:genre` | Browse by genre (all types) |
+| GET | `/genre/:genre?type=movie` | Browse genre — movies only |
+| GET | `/genre/:genre?type=series` | Browse genre — series only |
+| GET | `/genre/movie/:genre` | Movies in genre |
+| GET | `/genre/series/:genre` | Series in genre |
+
+**Available genres:** `action`, `adventure`, `animation`, `anime`, `comedy`, `crime`, `drama`, `drama-korea`, `family`, `fantasy`, `history`, `horror`, `kids`, `mystery`, `science-fiction`, `thriller`, `war`
+
+---
+
+### Countries
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/country` | List all countries |
+| GET | `/country/:country` | Browse by country |
+| GET | `/country/:country?type=movie` | Filter movies only |
+| GET | `/country/:country?type=series` | Filter series only |
+
+---
+
+### Years
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/year` | List all years |
+| GET | `/year/:year` | Browse by year (e.g. `/year/2024`) |
+| GET | `/year/:year?type=movie` | Filter movies only |
+
+---
+
+### Networks
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/network` | List all networks |
+| GET | `/network/netflix` | Netflix content |
+| GET | `/network/hbo` | HBO content |
+| GET | `/network/disney-plus` | Disney+ content |
+| GET | `/network/apple-tv-plus` | Apple TV+ content |
+| GET | `/network/amazon-prime-video` | Prime Video content |
+| GET | `/network/:network?type=series` | Filter by type |
+
+---
+
+## Stream URL Extraction
+
+The `/stream` endpoints use Puppeteer to navigate the player page and intercept the HLS/DASH manifest URL:
+
+```bash
+curl http://localhost:3000/api/movie/per-aspera-ad-astra-2026/stream
+```
+
+> **Note:** Stream URLs may expire. The cache TTL is set to 15 minutes by default. If extraction fails (Cloudflare blocks, JS challenge), the response returns `null` for `streamUrl`.
+
+---
+
+## Environment Variables
+
+See [`.env.example`](.env.example) for all available configuration options.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `IDLIX_BASE_URL` | `https://z2.idlixku.com` | Upstream site URL |
+| `PORT` | `3000` | API server port |
+| `PUPPETEER_HEADLESS` | `true` | Set `false` to show browser (debug) |
+| `CACHE_TTL_DETAIL` | `2` | Detail page cache (hours) |
+| `CACHE_TTL_STREAM` | `0.25` | Stream URL cache (hours = 15min) |
+| `CACHE_TTL_SEARCH` | `0.5` | Search cache (hours = 30min) |
+
+---
 
 **Contribution are welcome**

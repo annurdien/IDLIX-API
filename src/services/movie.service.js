@@ -3,13 +3,24 @@
 const httpClient = require('../lib/httpClient');
 const cache      = require('../lib/cacheService');
 const { CACHE_TTL } = require('../config/env');
-const { parseMediaItems, parseHomepageSection } = require('../lib/scraper');
+const { parseMediaItems, parseHomepageSection, parseDetail } = require('../lib/scraper');
+
+/**
+ * Fetch and parse the main movie browse page.
+ * @returns {Promise<Array>}
+ */
+async function getBrowse() {
+  const key = 'movie.browse';
+  if (cache.isHit(key, CACHE_TTL.page)) return cache.get(key);
+
+  const { data } = await httpClient.get('/movie');
+  const items = parseMediaItems(data, 'movie');
+  cache.set(key, items);
+  return items;
+}
 
 /**
  * Fetch and parse the "Collections" section from the homepage.
- * This replaces the old MCU endpoint — the new site no longer has a
- * dedicated Marvel Cinematic Universe page, but the homepage "Collections"
- * section serves as a curated collection equivalent.
  * @returns {Promise<Array>}
  */
 async function getMcu() {
@@ -24,8 +35,6 @@ async function getMcu() {
 
 /**
  * Fetch and parse trending movies from the homepage.
- * The new site's "Trending Now" section includes both movies and series;
- * we filter to movies only.
  * @returns {Promise<Array>}
  */
 async function getTrending() {
@@ -40,10 +49,6 @@ async function getTrending() {
 
 /**
  * Fetch and parse a specific page of trending movies.
- *
- * The new site does not support pagination on listing pages.
- * Page 1 returns the movie listing; pages beyond 1 throw a 404.
- *
  * @param {number} page
  * @returns {Promise<Array>}
  */
@@ -64,4 +69,50 @@ async function getTrendingPage(page) {
   return items;
 }
 
-module.exports = { getMcu, getTrending, getTrendingPage };
+/**
+ * Fetch and parse a movie detail page by slug.
+ * Returns rich metadata from JSON-LD structured data.
+ *
+ * @param {string} slug - e.g. "per-aspera-ad-astra-2026"
+ * @returns {Promise<Object>}
+ */
+async function getDetail(slug) {
+  const key = `movie.detail.${slug}`;
+  if (cache.isHit(key, CACHE_TTL.detail)) return cache.get(key);
+
+  const { data } = await httpClient.get(`/movie/${slug}`);
+  const detail = parseDetail(data);
+
+  if (!detail.title) {
+    const err = new Error('Movie not found');
+    err.status = 404;
+    throw err;
+  }
+
+  cache.set(key, detail);
+  return detail;
+}
+
+/**
+ * Extract the stream URL for a movie.
+ *
+ * Delegates to httpClient.getStreamUrl which:
+ *   1. Loads the detail page (no Turnstile)
+ *   2. Clicks the play button (client-side navigation)
+ *   3. Intercepts HLS/DASH manifest or play-info API responses
+ *
+ * Results are cached with a short TTL since stream URLs expire.
+ *
+ * @param {string} slug - e.g. "per-aspera-ad-astra-2026"
+ * @returns {Promise<string|null>}
+ */
+async function getStreamUrl(slug) {
+  const key = `movie.stream.${slug}`;
+  if (cache.isHit(key, CACHE_TTL.stream)) return cache.get(key);
+
+  const streamUrl = await httpClient.getStreamUrl(`/movie/${slug}?play=1`);
+  if (streamUrl) cache.set(key, streamUrl);
+  return streamUrl;
+}
+
+module.exports = { getBrowse, getMcu, getTrending, getTrendingPage, getDetail, getStreamUrl };

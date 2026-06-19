@@ -1,11 +1,21 @@
 'use strict';
 
 const movieService = require('../services/movie.service');
+const { success } = require('../lib/responseHelper');
+
+exports.browse = async (req, res, next) => {
+  try {
+    const data = await movieService.getBrowse();
+    success(res, data);
+  } catch (err) {
+    next(err);
+  }
+};
 
 exports.mcu = async (req, res, next) => {
   try {
     const data = await movieService.getMcu();
-    res.json(data);
+    success(res, data);
   } catch (err) {
     next(err);
   }
@@ -14,7 +24,7 @@ exports.mcu = async (req, res, next) => {
 exports.trending = async (req, res, next) => {
   try {
     const data = await movieService.getTrending();
-    res.json(data);
+    success(res, data);
   } catch (err) {
     next(err);
   }
@@ -23,8 +33,32 @@ exports.trending = async (req, res, next) => {
 exports.trendingPage = async (req, res, next) => {
   try {
     const data = await movieService.getTrendingPage(req.params.page);
-    res.json(data);
+    success(res, data);
   } catch (err) {
-    next(err); // 404 thrown by service propagates here
+    next(err);
+  }
+};
+
+exports.detail = async (req, res, next) => {
+  try {
+    const data = await movieService.getDetail(req.params.slug);
+    success(res, data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.stream = async (req, res, next) => {
+  try {
+    const streamUrl = await movieService.getStreamUrl(req.params.slug);
+    if (!streamUrl) {
+      return res.status(404).json({
+        success: false,
+        message: 'Stream URL could not be extracted. The site may require additional authentication.',
+      });
+    }
+    success(res, { slug: req.params.slug, streamUrl });
+  } catch (err) {
+    next(err);
   }
 };

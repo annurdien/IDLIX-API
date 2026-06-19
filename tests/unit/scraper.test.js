@@ -6,6 +6,8 @@ const path = require('path');
 const {
   parseMediaItems,
   parseHomepageSection,
+  parseCategoryItems,
+  parseDetail,
 } = require('../../src/lib/scraper');
 
 const FIXTURES = path.join(__dirname, '../fixtures');
@@ -139,5 +141,55 @@ describe('parseHomepageSection', () => {
 
   it('returns an empty array for HTML without the expected structure', () => {
     expect(parseHomepageSection('<div></div>', 'Trending Now')).toEqual([]);
+  });
+});
+
+// ── parseCategoryItems ─────────────────────────────────────────────────────
+
+describe('parseCategoryItems', () => {
+  it('extracts country, year, and network entries from category pages', () => {
+    const html = `
+      <section class="sr-only">
+        <ul>
+          <li><a href="/country/CN">China</a></li>
+          <li><a href="/year/2026">2026</a></li>
+          <li><a href="/network/hbo">HBO</a></li>
+        </ul>
+      </section>`;
+
+    expect(parseCategoryItems(html, 'country')).toMatchObject([
+      { title: 'China', code: 'CN', value: 'CN' },
+    ]);
+    expect(parseCategoryItems(html, 'year')).toMatchObject([
+      { title: '2026', year: 2026, value: 2026 },
+    ]);
+    expect(parseCategoryItems(html, 'network')).toMatchObject([
+      { title: 'HBO', network: 'hbo', value: 'hbo' },
+    ]);
+  });
+});
+
+// ── parseDetail ───────────────────────────────────────────────────────────
+
+describe('parseDetail', () => {
+  const detailHtml = fs.readFileSync(path.join(__dirname, '../../site/movie_detail.html'), 'utf-8');
+
+  it('extracts rich movie metadata and playback URLs', () => {
+    const detail = parseDetail(detailHtml);
+
+    expect(detail).toMatchObject({
+      title: 'Per Aspera Ad Astra',
+      originalTitle: expect.any(String),
+      year: 2026,
+      runtimeMinutes: 111,
+      type: 'movie',
+      country: 'China',
+    });
+    expect(detail.keywords).toEqual(expect.arrayContaining(['virtual reality', 'dream realm']));
+    expect(detail.watchUrl).toContain('?play=1');
+    expect(detail.playerUrl).toContain('?play=1');
+    expect(detail.breadcrumbs.length).toBeGreaterThan(0);
+    expect(detail.poster).toContain('image.tmdb.org');
+    expect(detail.streamUrl).toBeNull();
   });
 });

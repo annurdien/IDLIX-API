@@ -1,11 +1,21 @@
 'use strict';
 
 const seriesService = require('../services/series.service');
+const { success } = require('../lib/responseHelper');
+
+exports.browse = async (req, res, next) => {
+  try {
+    const data = await seriesService.getBrowse();
+    success(res, data);
+  } catch (err) {
+    next(err);
+  }
+};
 
 exports.trending = async (req, res, next) => {
   try {
     const data = await seriesService.getTrending();
-    res.json(data);
+    success(res, data);
   } catch (err) {
     next(err);
   }
@@ -14,7 +24,7 @@ exports.trending = async (req, res, next) => {
 exports.marvelSeries = async (req, res, next) => {
   try {
     const data = await seriesService.getMarvelSeries();
-    res.json(data);
+    success(res, data);
   } catch (err) {
     next(err);
   }
@@ -23,7 +33,7 @@ exports.marvelSeries = async (req, res, next) => {
 exports.appleTv = async (req, res, next) => {
   try {
     const data = await seriesService.getAppleTv();
-    res.json(data);
+    success(res, data);
   } catch (err) {
     next(err);
   }
@@ -32,7 +42,7 @@ exports.appleTv = async (req, res, next) => {
 exports.disneyPlus = async (req, res, next) => {
   try {
     const data = await seriesService.getDisneyPlus();
-    res.json(data);
+    success(res, data);
   } catch (err) {
     next(err);
   }
@@ -41,7 +51,7 @@ exports.disneyPlus = async (req, res, next) => {
 exports.hboSeries = async (req, res, next) => {
   try {
     const data = await seriesService.getHboSeries();
-    res.json(data);
+    success(res, data);
   } catch (err) {
     next(err);
   }
@@ -50,7 +60,7 @@ exports.hboSeries = async (req, res, next) => {
 exports.netflixSeries = async (req, res, next) => {
   try {
     const data = await seriesService.getNetflixSeries();
-    res.json(data);
+    success(res, data);
   } catch (err) {
     next(err);
   }
@@ -59,7 +69,31 @@ exports.netflixSeries = async (req, res, next) => {
 exports.netflixSeriesPage = async (req, res, next) => {
   try {
     const data = await seriesService.getNetflixSeriesPage(req.params.page);
-    res.json(data);
+    success(res, data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.detail = async (req, res, next) => {
+  try {
+    const data = await seriesService.getDetail(req.params.slug);
+    success(res, data);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.stream = async (req, res, next) => {
+  try {
+    const streamUrl = await seriesService.getStreamUrl(req.params.slug);
+    if (!streamUrl) {
+      return res.status(404).json({
+        success: false,
+        message: 'Stream URL could not be extracted. The site may require additional authentication.',
+      });
+    }
+    success(res, { slug: req.params.slug, streamUrl });
   } catch (err) {
     next(err);
   }

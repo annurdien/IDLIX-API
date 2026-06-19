@@ -25,7 +25,6 @@ function validatePage(req, res, next) {
 /**
  * Validates a `:genre` route parameter.
  * Only allows lowercase letters, digits, and hyphens to prevent injection.
- * Responds with 400 for any other characters (path traversal, XSS, etc.).
  *
  * @type {import('express').RequestHandler}
  */
@@ -39,4 +38,69 @@ function validateGenre(req, res, next) {
   next();
 }
 
-module.exports = { validatePage, validateGenre };
+/**
+ * Validates a generic slug route parameter (movie/series slugs).
+ * Allows letters, numbers, and hyphens.
+ *
+ * @type {import('express').RequestHandler}
+ */
+function validateSlug(req, res, next) {
+  const values = req.params || {};
+  const slug = values.slug || values.country || values.network || values.genre;
+  if (!slug || !/^[a-z0-9-]+$/i.test(slug)) {
+    return res
+      .status(400)
+      .json({ success: false, message: 'Invalid value. Only letters, numbers and hyphens are allowed.' });
+  }
+  next();
+}
+
+/**
+ * Validates a media slug parameter like "movie-title-2024".
+ * Allows letters, numbers, and hyphens.
+ *
+ * @type {import('express').RequestHandler}
+ */
+function validateMediaSlug(req, res, next) {
+  const { slug } = req.params;
+  if (!slug || !/^[a-z0-9][a-z0-9-]*[a-z0-9]$/i.test(slug)) {
+    return res
+      .status(400)
+      .json({ success: false, message: 'Invalid slug. Only letters, numbers and hyphens are allowed.' });
+  }
+  next();
+}
+
+/**
+ * Validates a four-digit year route parameter.
+ *
+ * @type {import('express').RequestHandler}
+ */
+function validateYear(req, res, next) {
+  const { year } = req.params;
+  if (!year || !/^(19|20)\d{2}$/.test(String(year))) {
+    return res
+      .status(400)
+      .json({ success: false, message: 'Invalid year. Must be a four-digit year.' });
+  }
+  next();
+}
+
+/**
+ * Validates the `q` query parameter for search.
+ * Requires at least 2 non-whitespace characters.
+ *
+ * @type {import('express').RequestHandler}
+ */
+function validateSearchQuery(req, res, next) {
+  const q = String(req.query.q || '').trim();
+  if (!q || q.length < 2) {
+    return res
+      .status(400)
+      .json({ success: false, message: 'Query parameter "q" is required and must be at least 2 characters.' });
+  }
+  req.query.q = q;
+  next();
+}
+
+module.exports = { validatePage, validateGenre, validateSlug, validateMediaSlug, validateYear, validateSearchQuery };

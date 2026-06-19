@@ -1,11 +1,11 @@
 {
   "name": "idlix-api",
-  "version": "2.0.0",
-  "description": "Idlix REST-API",
+  "version": "3.0.0",
+  "description": "IDLIX REST API — Puppeteer-based scraper with Cloudflare bypass",
   "main": "server.js",
   "scripts": {
-    "start": "cross-env NODE_EXTRA_CA_CERTS=\"./intermediate.pem\" node server.js",
-    "dev": "cross-env NODE_EXTRA_CA_CERTS=\"./intermediate.pem\" nodemon server",
+    "start": "node server.js",
+    "dev": "nodemon server",
     "test": "jest",
     "test:coverage": "jest --coverage",
     "test:watch": "jest --watch"
@@ -17,7 +17,8 @@
   "keywords": [
     "scrapper",
     "async",
-    "javascript"
+    "javascript",
+    "puppeteer"
   ],
   "author": "Annurdien Rasyid",
   "license": "MIT",
@@ -26,15 +27,15 @@
   },
   "homepage": "https://github.com/annurdien/IDLIX-API#readme",
   "dependencies": {
-    "axios": "^0.21.2",
     "cheerio": "^1.0.0-rc.9",
-    "cloudscraper": "^4.6.0",
     "cors": "^2.8.5",
     "cross-env": "^7.0.3",
     "dotenv": "^16.0.0",
     "express": "^4.17.1",
     "helmet": "^4.6.0",
-    "tough-cookie": "^4.0.0"
+    "puppeteer": "^24.43.1",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
   },
   "devDependencies": {
     "jest": "^29.0.0",
