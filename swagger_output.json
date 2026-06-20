@@ -175,76 +175,6 @@
         }
       }
     },
-    "/api/series/marvel": {
-      "get": {
-        "description": "",
-        "responses": {
-          "default": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/series/apple": {
-      "get": {
-        "description": "",
-        "responses": {
-          "default": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/series/disney": {
-      "get": {
-        "description": "",
-        "responses": {
-          "default": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/series/hbo": {
-      "get": {
-        "description": "",
-        "responses": {
-          "default": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/series/netflix": {
-      "get": {
-        "description": "",
-        "responses": {
-          "default": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/series/netflix/{page}": {
-      "get": {
-        "description": "",
-        "parameters": [
-          {
-            "name": "page",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "400": {
-            "description": "Bad Request"
-          }
-        }
-      }
-    },
     "/api/series/{slug}/season/{season}/episode/{episode}/stream": {
       "get": {
         "description": "",
@@ -327,7 +257,26 @@
         }
       }
     },
-    "/api/genre/": {
+    "/api/search/": {
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/api/leaderboard/": {
       "get": {
         "description": "",
         "responses": {
@@ -337,12 +286,22 @@
         }
       }
     },
-    "/api/genre/series/{genre}": {
+    "/api/genre/": {
+      "get": {
+        "description": "",
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/api/genre/series/{value}": {
       "get": {
         "description": "",
         "parameters": [
           {
-            "name": "genre",
+            "name": "value",
             "in": "path",
             "required": true,
             "schema": {
@@ -357,12 +316,12 @@
         }
       }
     },
-    "/api/genre/series/{genre}/{page}": {
+    "/api/genre/series/{value}/{page}": {
       "get": {
         "description": "",
         "parameters": [
           {
-            "name": "genre",
+            "name": "value",
             "in": "path",
             "required": true,
             "schema": {
@@ -385,12 +344,12 @@
         }
       }
     },
-    "/api/genre/movie/{genre}": {
+    "/api/genre/movie/{value}": {
       "get": {
         "description": "",
         "parameters": [
           {
-            "name": "genre",
+            "name": "value",
             "in": "path",
             "required": true,
             "schema": {
@@ -405,12 +364,12 @@
         }
       }
     },
-    "/api/genre/movie/{genre}/{page}": {
+    "/api/genre/movie/{value}/{page}": {
       "get": {
         "description": "",
         "parameters": [
           {
-            "name": "genre",
+            "name": "value",
             "in": "path",
             "required": true,
             "schema": {
@@ -433,12 +392,12 @@
         }
       }
     },
-    "/api/genre/{genre}": {
+    "/api/genre/{value}": {
       "get": {
         "description": "",
         "parameters": [
           {
-            "name": "genre",
+            "name": "value",
             "in": "path",
             "required": true,
             "schema": {
@@ -460,12 +419,12 @@
         }
       }
     },
-    "/api/genre/{genre}/{page}": {
+    "/api/genre/{value}/{page}": {
       "get": {
         "description": "",
         "parameters": [
           {
-            "name": "genre",
+            "name": "value",
             "in": "path",
             "required": true,
             "schema": {
@@ -499,18 +458,114 @@
       "get": {
         "description": "",
         "responses": {
-          "default": {
-            "description": ""
+          "400": {
+            "description": "Bad Request"
           }
         }
       }
     },
-    "/api/country/{country}": {
+    "/api/country/series/{value}": {
       "get": {
         "description": "",
         "parameters": [
           {
-            "name": "country",
+            "name": "value",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/api/country/series/{value}/{page}": {
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "value",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/api/country/movie/{value}": {
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "value",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/api/country/movie/{value}/{page}": {
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "value",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/api/country/{value}": {
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "value",
             "in": "path",
             "required": true,
             "schema": {
@@ -532,12 +587,12 @@
         }
       }
     },
-    "/api/country/{country}/{page}": {
+    "/api/country/{value}/{page}": {
       "get": {
         "description": "",
         "parameters": [
           {
-            "name": "country",
+            "name": "value",
             "in": "path",
             "required": true,
             "schema": {
@@ -571,18 +626,114 @@
       "get": {
         "description": "",
         "responses": {
-          "default": {
-            "description": ""
+          "400": {
+            "description": "Bad Request"
           }
         }
       }
     },
-    "/api/year/{year}": {
+    "/api/year/series/{value}": {
       "get": {
         "description": "",
         "parameters": [
           {
-            "name": "year",
+            "name": "value",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/api/year/series/{value}/{page}": {
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "value",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/api/year/movie/{value}": {
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "value",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/api/year/movie/{value}/{page}": {
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "value",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/api/year/{value}": {
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "value",
             "in": "path",
             "required": true,
             "schema": {
@@ -604,12 +755,12 @@
         }
       }
     },
-    "/api/year/{year}/{page}": {
+    "/api/year/{value}/{page}": {
       "get": {
         "description": "",
         "parameters": [
           {
-            "name": "year",
+            "name": "value",
             "in": "path",
             "required": true,
             "schema": {
@@ -643,18 +794,114 @@
       "get": {
         "description": "",
         "responses": {
-          "default": {
-            "description": ""
+          "400": {
+            "description": "Bad Request"
           }
         }
       }
     },
-    "/api/network/{network}": {
+    "/api/network/series/{value}": {
       "get": {
         "description": "",
         "parameters": [
           {
-            "name": "network",
+            "name": "value",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/api/network/series/{value}/{page}": {
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "value",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/api/network/movie/{value}": {
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "value",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/api/network/movie/{value}/{page}": {
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "value",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/api/network/{value}": {
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "value",
             "in": "path",
             "required": true,
             "schema": {
@@ -676,12 +923,12 @@
         }
       }
     },
-    "/api/network/{network}/{page}": {
+    "/api/network/{value}/{page}": {
       "get": {
         "description": "",
         "parameters": [
           {
-            "name": "network",
+            "name": "value",
             "in": "path",
             "required": true,
             "schema": {
@@ -707,35 +954,6 @@
         "responses": {
           "400": {
             "description": "Bad Request"
-          }
-        }
-      }
-    },
-    "/api/search/": {
-      "get": {
-        "description": "",
-        "parameters": [
-          {
-            "name": "q",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "400": {
-            "description": "Bad Request"
-          }
-        }
-      }
-    },
-    "/api/leaderboard/": {
-      "get": {
-        "description": "",
-        "responses": {
-          "default": {
-            "description": ""
           }
         }
       }

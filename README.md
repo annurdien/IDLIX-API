@@ -119,12 +119,6 @@ All responses follow the envelope:
 |--------|----------|-------------|
 | GET | `/series` | Browse all series |
 | GET | `/series/trending` | Trending series |
-| GET | `/series/marvel` | Network Originals section |
-| GET | `/series/apple` | Apple TV+ series |
-| GET | `/series/disney` | Disney+ series |
-| GET | `/series/hbo` | HBO series |
-| GET | `/series/netflix` | Netflix series |
-| GET | `/series/netflix/:page` | Netflix series (page N) |
 | GET | `/series/:slug` | Series detail — full metadata |
 | GET | `/series/:slug/season/:season/episode/:episode/stream` | Extract episode stream URL & subtitles |
 
