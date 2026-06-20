@@ -3,7 +3,7 @@
 const httpClient = require('../lib/httpClient');
 const cache      = require('../lib/cacheService');
 const { CACHE_TTL } = require('../config/env');
-const { mapApiItem, parseDetail } = require('../lib/scraper');
+const { mapApiItem, mapApiDetail } = require('../lib/scraper');
 
 /**
  * Fetch and parse the main TV series browse page.
@@ -38,110 +38,10 @@ async function getTrending() {
   return items;
 }
 
-/**
- * Fetch and parse the "Network Originals" section from the homepage.
- * @returns {Promise<Array>}
- */
-async function getMarvelSeries() {
-  const key = 'marvelseries';
-  if (cache.isHit(key, CACHE_TTL.series)) return cache.get(key);
-
-  const data = await httpClient.getJson('/api/homepage');
-  if (!data) return [];
-
-  const allSections = [...(data.above || []), ...(data.below || [])];
-  const section = allSections.find(s => s.title && s.title.toLowerCase().includes('network original'));
-  const items = (section?.data || []).map(mapApiItem).filter(Boolean);
-  
-  cache.set(key, items);
-  return items;
-}
 
 /**
- * Fetch and parse Apple TV+ series.
- * @returns {Promise<Array>}
- */
-async function getAppleTv() {
-  const key = 'appletvseries';
-  if (cache.isHit(key, CACHE_TTL.series)) return cache.get(key);
-
-  const data = await httpClient.getJson('/api/series?network=apple-tv-plus&page=1&limit=36&sort=createdAt');
-  const items = (data?.data || []).map(mapApiItem).filter(Boolean);
-  
-  cache.set(key, items);
-  return items;
-}
-
-/**
- * Fetch and parse Disney+ series.
- * @returns {Promise<Array>}
- */
-async function getDisneyPlus() {
-  const key = 'disneyplusseries';
-  if (cache.isHit(key, CACHE_TTL.series)) return cache.get(key);
-
-  const data = await httpClient.getJson('/api/series?network=disney-plus&page=1&limit=36&sort=createdAt');
-  const items = (data?.data || []).map(mapApiItem).filter(Boolean);
-  
-  cache.set(key, items);
-  return items;
-}
-
-/**
- * Fetch and parse HBO series.
- * @returns {Promise<Array>}
- */
-async function getHboSeries() {
-  const key = 'hboseries';
-  if (cache.isHit(key, CACHE_TTL.series)) return cache.get(key);
-
-  const data = await httpClient.getJson('/api/series?network=hbo&page=1&limit=36&sort=createdAt');
-  const items = (data?.data || []).map(mapApiItem).filter(Boolean);
-  
-  cache.set(key, items);
-  return items;
-}
-
-/**
- * Fetch and parse Netflix series (page 1).
- * @returns {Promise<Array>}
- */
-async function getNetflixSeries() {
-  const key = 'netflixseries';
-  if (cache.isHit(key, CACHE_TTL.series)) return cache.get(key);
-
-  const data = await httpClient.getJson('/api/series?network=netflix&page=1&limit=36&sort=createdAt');
-  const items = (data?.data || []).map(mapApiItem).filter(Boolean);
-  
-  cache.set(key, items);
-  return items;
-}
-
-/**
- * Fetch and parse a specific page of Netflix series.
- * @param {number} page
- * @returns {Promise<Array>}
- */
-async function getNetflixSeriesPage(page) {
-  const key = `netflixseries.page.${page}`;
-  if (cache.isHit(key, CACHE_TTL.series)) return cache.get(key);
-
-  const data = await httpClient.getJson(`/api/series?network=netflix&page=${page}&limit=36&sort=createdAt`);
-  const items = (data?.data || []).map(mapApiItem).filter(Boolean);
-
-  if (items.length === 0 && page > 1) {
-    const err = new Error('Page not found');
-    err.status = 404;
-    throw err;
-  }
-
-  cache.set(key, items);
-  return items;
-}
-
-/**
- * Fetch and parse a series detail page by slug.
- * Returns rich metadata from JSON-LD structured data.
+ * Fetch a series detail page by slug.
+ * Returns rich metadata from the native JSON API.
  *
  * @param {string} slug - e.g. "the-last-of-us-2023"
  * @returns {Promise<Object>}
@@ -150,8 +50,8 @@ async function getDetail(slug) {
   const key = `series.detail.${slug}`;
   if (cache.isHit(key, CACHE_TTL.detail)) return cache.get(key);
 
-  const { data } = await httpClient.get(`/series/${slug}`);
-  const detail = parseDetail(data);
+  const data = await httpClient.getJson(`/api/series/${slug}`);
+  const detail = mapApiDetail(data);
 
   if (!detail.title) {
     const err = new Error('Series not found');
@@ -217,12 +117,7 @@ async function getEpisodeStreamData(slug, season, episode) {
 module.exports = {
   getBrowse,
   getTrending,
-  getMarvelSeries,
-  getAppleTv,
-  getDisneyPlus,
-  getHboSeries,
-  getNetflixSeries,
-  getNetflixSeriesPage,
+
   getDetail,
   getStreamData,
   getEpisodeStreamData,

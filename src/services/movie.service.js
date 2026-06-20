@@ -3,7 +3,7 @@
 const httpClient = require('../lib/httpClient');
 const cache      = require('../lib/cacheService');
 const { CACHE_TTL } = require('../config/env');
-const { mapApiItem, parseDetail } = require('../lib/scraper');
+const { mapApiItem, mapApiDetail } = require('../lib/scraper');
 
 /**
  * Fetch and parse the main movie browse page.
@@ -69,19 +69,14 @@ async function getTrendingPage(page) {
   const data = await httpClient.getJson(`/api/movies?page=${page}&limit=36&sort=popularityScore`);
   const items = (data?.data || []).map(mapApiItem).filter(Boolean);
 
-  if (items.length === 0 && page > 1) {
-    const err = new Error('Page not found');
-    err.status = 404;
-    throw err;
-  }
 
   cache.set(key, items);
   return items;
 }
 
 /**
- * Fetch and parse a movie detail page by slug.
- * Returns rich metadata from JSON-LD structured data.
+ * Fetch a movie detail page by slug.
+ * Returns rich metadata from the native JSON API.
  *
  * @param {string} slug - e.g. "per-aspera-ad-astra-2026"
  * @returns {Promise<Object>}
@@ -90,8 +85,8 @@ async function getDetail(slug) {
   const key = `movie.detail.${slug}`;
   if (cache.isHit(key, CACHE_TTL.detail)) return cache.get(key);
 
-  const { data } = await httpClient.get(`/movie/${slug}`);
-  const detail = parseDetail(data);
+  const data = await httpClient.getJson(`/api/movies/${slug}`);
+  const detail = mapApiDetail(data);
 
   if (!detail.title) {
     const err = new Error('Movie not found');

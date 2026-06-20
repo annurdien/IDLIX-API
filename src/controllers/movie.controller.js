@@ -57,16 +57,7 @@ exports.stream = async (req, res, next) => {
         message: 'Stream URL could not be extracted. The site may require additional authentication.',
       });
     }
-    success(res, {
-      slug:        req.params.slug,
-      streamUrl:   result.streamUrl,
-      subtitles:   result.subtitles   || [],
-      videoId:     result.videoId     || null,
-      title:       result.title       || null,
-      durationSec: result.durationSec || null,
-      maxHeight:   result.maxHeight   || null,
-      expiresAt:   result.expiresAt   || null,
-    });
+    success(res, { slug: req.params.slug, ...result });
   } catch (err) {
     next(err);
   }

@@ -9,7 +9,6 @@
  * Public API:
  *   get(path)                      → Promise<{ data: html }>
  *   getJson(path)                  → Promise<Object|null>
- *   getStreamUrl(path)             → Promise<string|null>   (backward-compat)
  *   getStreamData(slug)            → Promise<StreamResult>
  *   getEpisodeStreamData(s,se,ep)  → Promise<StreamResult>
  *   close()                        → Promise<void>
@@ -51,20 +50,6 @@ const httpClient = {
     try { return JSON.parse(res.text); } catch (_) { return null; }
   },
 
-  /**
-   * Backward-compatible stream URL extractor.
-   * Extracts slug and type from the old path format and delegates to getStreamData.
-   *
-   * @param {string} path - e.g. "/movie/slug?play=1"
-   * @returns {Promise<string|null>}
-   */
-  async getStreamUrl(path) {
-    const cleanPath = path.replace(/[?&]play=1/, '');
-    const parts     = cleanPath.split('/').filter(Boolean);
-    const slug      = parts.slice(1).join('/');
-    const result    = await getStreamData(slug);
-    return result.streamUrl || null;
-  },
 
   /**
    * Full streaming chain for a movie (returns subtitles + metadata).

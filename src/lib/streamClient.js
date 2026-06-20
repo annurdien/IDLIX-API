@@ -27,12 +27,11 @@
  */
 
 const { BASE_URL } = require('../config/env');
-const { browserFetch, getCookieHeader } = require('./cfBypass/cookieHarvester');
+const { browserFetch } = require('./cfBypass/cookieHarvester');
 
 const UA = 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36';
 
-// UUID v4 pattern
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

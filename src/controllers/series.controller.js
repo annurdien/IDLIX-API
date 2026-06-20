@@ -21,59 +21,6 @@ exports.trending = async (req, res, next) => {
   }
 };
 
-exports.marvelSeries = async (req, res, next) => {
-  try {
-    const data = await seriesService.getMarvelSeries();
-    success(res, data);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.appleTv = async (req, res, next) => {
-  try {
-    const data = await seriesService.getAppleTv();
-    success(res, data);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.disneyPlus = async (req, res, next) => {
-  try {
-    const data = await seriesService.getDisneyPlus();
-    success(res, data);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.hboSeries = async (req, res, next) => {
-  try {
-    const data = await seriesService.getHboSeries();
-    success(res, data);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.netflixSeries = async (req, res, next) => {
-  try {
-    const data = await seriesService.getNetflixSeries();
-    success(res, data);
-  } catch (err) {
-    next(err);
-  }
-};
-
-exports.netflixSeriesPage = async (req, res, next) => {
-  try {
-    const data = await seriesService.getNetflixSeriesPage(req.params.page);
-    success(res, data);
-  } catch (err) {
-    next(err);
-  }
-};
 
 exports.detail = async (req, res, next) => {
   try {
@@ -93,16 +40,7 @@ exports.stream = async (req, res, next) => {
         message: 'Stream URL could not be extracted. The site may require additional authentication.',
       });
     }
-    success(res, {
-      slug:        req.params.slug,
-      streamUrl:   result.streamUrl,
-      subtitles:   result.subtitles   || [],
-      videoId:     result.videoId     || null,
-      title:       result.title       || null,
-      durationSec: result.durationSec || null,
-      maxHeight:   result.maxHeight   || null,
-      expiresAt:   result.expiresAt   || null,
-    });
+    success(res, { slug: req.params.slug, ...result });
   } catch (err) {
     next(err);
   }
@@ -120,15 +58,9 @@ exports.episodeStream = async (req, res, next) => {
     }
     success(res, {
       slug,
-      season:      Number(season),
-      episode:     Number(episode),
-      streamUrl:   result.streamUrl,
-      subtitles:   result.subtitles   || [],
-      videoId:     result.videoId     || null,
-      title:       result.title       || null,
-      durationSec: result.durationSec || null,
-      maxHeight:   result.maxHeight   || null,
-      expiresAt:   result.expiresAt   || null,
+      season: Number(season),
+      episode: Number(episode),
+      ...result
     });
   } catch (err) {
     next(err);
