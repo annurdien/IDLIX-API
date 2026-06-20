@@ -3,7 +3,7 @@
 const httpClient = require('../lib/httpClient');
 const cache      = require('../lib/cacheService');
 const { CACHE_TTL } = require('../config/env');
-const { parseMediaItems, parseHomepageSection, parseDetail } = require('../lib/scraper');
+const { mapApiItem, parseDetail } = require('../lib/scraper');
 
 /**
  * Fetch and parse the main TV series browse page.
@@ -13,8 +13,9 @@ async function getBrowse() {
   const key = 'series.browse';
   if (cache.isHit(key, CACHE_TTL.page)) return cache.get(key);
 
-  const { data } = await httpClient.get('/series');
-  const items = parseMediaItems(data, 'series');
+  const data = await httpClient.getJson('/api/series?page=1&limit=36&sort=createdAt');
+  const items = (data?.data || []).map(mapApiItem).filter(Boolean);
+  
   cache.set(key, items);
   return items;
 }
@@ -27,8 +28,12 @@ async function getTrending() {
   const key = 'trending.tv';
   if (cache.isHit(key, CACHE_TTL.trending)) return cache.get(key);
 
-  const { data } = await httpClient.get('/');
-  const items = parseHomepageSection(data, 'Trending Now', 'series');
+  const data = await httpClient.getJson('/api/homepage');
+  if (!data || !data.above) return [];
+
+  const section = data.above.find(s => s.title && s.title.toLowerCase().includes('trending')) || data.above[0];
+  const items = (section?.data || []).map(mapApiItem).filter(i => i.type === 'series');
+  
   cache.set(key, items);
   return items;
 }
@@ -41,8 +46,13 @@ async function getMarvelSeries() {
   const key = 'marvelseries';
   if (cache.isHit(key, CACHE_TTL.series)) return cache.get(key);
 
-  const { data } = await httpClient.get('/');
-  const items = parseHomepageSection(data, 'Network Originals', 'series');
+  const data = await httpClient.getJson('/api/homepage');
+  if (!data) return [];
+
+  const allSections = [...(data.above || []), ...(data.below || [])];
+  const section = allSections.find(s => s.title && s.title.toLowerCase().includes('network original'));
+  const items = (section?.data || []).map(mapApiItem).filter(Boolean);
+  
   cache.set(key, items);
   return items;
 }
@@ -55,8 +65,9 @@ async function getAppleTv() {
   const key = 'appletvseries';
   if (cache.isHit(key, CACHE_TTL.series)) return cache.get(key);
 
-  const { data } = await httpClient.get('/network/apple-tv-plus');
-  const items = parseMediaItems(data, 'series');
+  const data = await httpClient.getJson('/api/series?network=apple-tv-plus&page=1&limit=36&sort=createdAt');
+  const items = (data?.data || []).map(mapApiItem).filter(Boolean);
+  
   cache.set(key, items);
   return items;
 }
@@ -69,8 +80,9 @@ async function getDisneyPlus() {
   const key = 'disneyplusseries';
   if (cache.isHit(key, CACHE_TTL.series)) return cache.get(key);
 
-  const { data } = await httpClient.get('/network/disney-plus');
-  const items = parseMediaItems(data, 'series');
+  const data = await httpClient.getJson('/api/series?network=disney-plus&page=1&limit=36&sort=createdAt');
+  const items = (data?.data || []).map(mapApiItem).filter(Boolean);
+  
   cache.set(key, items);
   return items;
 }
@@ -83,8 +95,9 @@ async function getHboSeries() {
   const key = 'hboseries';
   if (cache.isHit(key, CACHE_TTL.series)) return cache.get(key);
 
-  const { data } = await httpClient.get('/network/hbo');
-  const items = parseMediaItems(data, 'series');
+  const data = await httpClient.getJson('/api/series?network=hbo&page=1&limit=36&sort=createdAt');
+  const items = (data?.data || []).map(mapApiItem).filter(Boolean);
+  
   cache.set(key, items);
   return items;
 }
@@ -97,8 +110,9 @@ async function getNetflixSeries() {
   const key = 'netflixseries';
   if (cache.isHit(key, CACHE_TTL.series)) return cache.get(key);
 
-  const { data } = await httpClient.get('/network/netflix');
-  const items = parseMediaItems(data, 'series');
+  const data = await httpClient.getJson('/api/series?network=netflix&page=1&limit=36&sort=createdAt');
+  const items = (data?.data || []).map(mapApiItem).filter(Boolean);
+  
   cache.set(key, items);
   return items;
 }
@@ -112,10 +126,10 @@ async function getNetflixSeriesPage(page) {
   const key = `netflixseries.page.${page}`;
   if (cache.isHit(key, CACHE_TTL.series)) return cache.get(key);
 
-  const { data } = await httpClient.get('/network/netflix');
-  const items = parseMediaItems(data, 'series');
+  const data = await httpClient.getJson(`/api/series?network=netflix&page=${page}&limit=36&sort=createdAt`);
+  const items = (data?.data || []).map(mapApiItem).filter(Boolean);
 
-  if (items.length === 0 || page > 1) {
+  if (items.length === 0 && page > 1) {
     const err = new Error('Page not found');
     err.status = 404;
     throw err;

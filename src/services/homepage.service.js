@@ -3,7 +3,7 @@
 const httpClient = require('../lib/httpClient');
 const cache      = require('../lib/cacheService');
 const { CACHE_TTL } = require('../config/env');
-const { parseHomepageSection, parseHomepageSections, parseMediaItems } = require('../lib/scraper');
+const { mapApiItem } = require('../lib/scraper');
 
 /**
  * Fetch and parse featured movies from the IDLIX homepage.
@@ -14,8 +14,12 @@ async function getFeatured() {
   const key = 'featured';
   if (cache.isHit(key, CACHE_TTL.featured)) return cache.get(key);
 
-  const { data } = await httpClient.get('/');
-  const items = parseHomepageSection(data, 'Trending Now');
+  const data = await httpClient.getJson('/api/homepage');
+  if (!data || !data.above) return [];
+  
+  const section = data.above.find(s => s.title && s.title.toLowerCase().includes('featured')) || data.above[0];
+  const items = (section?.data || []).map(mapApiItem).filter(Boolean);
+  
   cache.set(key, items);
   return items;
 }
@@ -29,8 +33,12 @@ async function getCinemaxxi() {
   const key = 'cinemaxxi';
   if (cache.isHit(key, CACHE_TTL.cinemaxxi)) return cache.get(key);
 
-  const { data } = await httpClient.get('/');
-  const items = parseHomepageSection(data, 'Recently Added Movies', 'movie');
+  const data = await httpClient.getJson('/api/homepage');
+  if (!data || !data.above) return [];
+
+  const section = data.above.find(s => s.title && s.title.toLowerCase().includes('recently added movies')) || data.above[1];
+  const items = (section?.data || []).map(mapApiItem).filter(Boolean);
+  
   cache.set(key, items);
   return items;
 }
@@ -44,8 +52,12 @@ async function getHome() {
   const key = 'home.all';
   if (cache.isHit(key, CACHE_TTL.home)) return cache.get(key);
 
-  const { data } = await httpClient.get('/');
-  const items = parseMediaItems(data, null);
+  const data = await httpClient.getJson('/api/homepage');
+  if (!data) return [];
+
+  const allSections = [...(data.above || []), ...(data.below || [])];
+  const items = allSections.flatMap(s => (s.data || []).map(mapApiItem)).filter(Boolean);
+  
   cache.set(key, items);
   return items;
 }
@@ -59,8 +71,20 @@ async function getHomeSections() {
   const key = 'home.sections';
   if (cache.isHit(key, CACHE_TTL.home)) return cache.get(key);
 
-  const { data } = await httpClient.get('/');
-  const sections = parseHomepageSections(data);
+  const data = await httpClient.getJson('/api/homepage');
+  if (!data) return {};
+
+  const sections = {};
+  const allSections = [...(data.above || []), ...(data.below || [])];
+  
+  for (const s of allSections) {
+    if (!s.title) continue;
+    const items = (s.data || []).map(mapApiItem).filter(Boolean);
+    if (items.length) {
+      sections[s.title] = items;
+    }
+  }
+
   cache.set(key, sections);
   return sections;
 }

@@ -6,14 +6,13 @@ A REST API that scrapes `https://z2.idlixku.com/` using **Puppeteer + stealth pl
 
 ## Features
 
-- ✅ Cloudflare bypass via `puppeteer-extra` + `stealth-plugin`
-- ✅ Full detail pages — rich metadata from JSON-LD structured data
-- ✅ Stream URL extraction via Puppeteer network interception
-- ✅ Search endpoint
-- ✅ Leaderboard endpoint
-- ✅ All category pages: Movies, TV Series, Genres, Countries, Years, Networks
-- ✅ Consistent `{ success, data, pagination, filters }` response envelope
-- ✅ In-memory TTL cache
+- **Cloudflare Bypass (TLS Fingerprinting):** Persistent headless Chromium singleton to seamlessly mirror BoringSSL signatures and bypass strict 403 Forbidden Cloudflare blocks.
+- **Rich Stream Metadata:** Directly extracts the internal majorplay.net JSON configurations, including stream URLs, multi-language subtitle tracks, duration, and video IDs.
+- **Resilient JSON Scraping:** The API now directly maps IDLIX's native JSON APIs (`/api/movies`, `/api/series`, etc.) to objects rather than using brittle Cheerio HTML parsing, resulting in **O(1) list mapping** and absolute layout resilience.
+- **Interactive API Documentation:** Powered by Scalar (OpenAPI 3.0.0), available at `/docs`.
+- **Complete Feature Set:** Full detail pages, search endpoints, leaderboard, and all category filters (Movies, TV Series, Genres, Countries, Years, Networks).
+- **Consistent Response Envelope:** Standardized `{ success, data, pagination, filters }` output format.
+- **In-memory TTL Cache:** Configurable caching for blisteringly fast responses.
 
 ## Installation
 
@@ -127,7 +126,7 @@ All responses follow the envelope:
 | GET | `/series/netflix` | Netflix series |
 | GET | `/series/netflix/:page` | Netflix series (page N) |
 | GET | `/series/:slug` | Series detail — full metadata |
-| GET | `/series/:slug/stream` | Extract stream URL (Puppeteer) |
+| GET | `/series/:slug/season/:season/episode/:episode/stream` | Extract episode stream URL & subtitles |
 
 ---
 
@@ -181,15 +180,33 @@ All responses follow the envelope:
 
 ---
 
-## Stream URL Extraction
+## Stream URL Extraction Architecture
 
-The `/stream` endpoints use Puppeteer to navigate the player page and intercept the HLS/DASH manifest URL:
+Unlike previous versions that relied on brittle Puppeteer network interception, the `/stream` endpoints now flawlessly replicate the internal 6-step IDLIX proxy chain while completely bypassing Cloudflare Bot Management.
 
+### How it Works
+
+Because Cloudflare instantly blocks standard Node.js `fetch()` requests due to a **TLS Fingerprint mismatch** (OpenSSL vs. Chromium's BoringSSL), the API maintains a singleton, headless Chromium tab parked on the base URL. All protected API requests are executed *inside* this browser context using `page.evaluate(fetch())`, ensuring a perfect fingerprint.
+
+The extraction follows this sequence:
+1. **UUID Resolution:** Calls `/api/movies/{slug}` or `/api/series/{slug}/season/{season}` to retrieve internal Movie/Series/Episode UUIDs.
+2. **Analytics Tracking:** Pings `/api/views/track`.
+3. **Gate Token Generation:** Requests `/api/watch/play-info/` which returns a `gateToken` and an `unlockAt` timestamp.
+4. **Mandatory Delay:** The API honors IDLIX's internal 15-second anti-scraping timer (`unlockAt - serverNow`). 
+5. **Session Claim:** Exchanges the unlocked `gateToken` for a JSON Web Token and a redemption URL.
+6. **Final Resolution:** Fires a blazing-fast, direct Node.js `fetch()` to `majorplay.net` (which lacks Cloudflare protection) to redeem the token and extract the final `.json` configuration containing `.m3u8` links and `.vtt` subtitles.
+
+**Example movie stream request:**
 ```bash
 curl http://localhost:3000/api/movie/per-aspera-ad-astra-2026/stream
 ```
 
-> **Note:** Stream URLs may expire. The cache TTL is set to 15 minutes by default. If extraction fails (Cloudflare blocks, JS challenge), the response returns `null` for `streamUrl`.
+**Example series stream request:**
+```bash
+curl http://localhost:3000/api/series/oasis-2026/season/1/episode/1/stream
+```
+
+> **Note:** The very first request after an API restart will take ~25 seconds (booting Puppeteer + solving Cloudflare JS challenge + the mandatory 15s API gate). Subsequent streams only suffer the mandatory 15-second API delay. Stream configurations are cached in-memory.
 
 ---
 

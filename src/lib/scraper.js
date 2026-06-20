@@ -57,6 +57,42 @@ function toArray(value) {
 }
 
 /**
+ * Maps a native JSON API item from IDLIX into our standardized schema.
+ * @param {Object} item - The raw JSON item from /api/movies or /api/homepage
+ * @returns {Object} Standardized media item
+ */
+function mapApiItem(item) {
+  if (!item) return null;
+  const isSeries = item.contentType === 'series';
+  const endpoint = `${isSeries ? 'series' : 'movie'}/${item.slug}`;
+  
+  let year = null;
+  if (item.releaseDate) {
+    const match = String(item.releaseDate).match(/(19|20)\d{2}/);
+    if (match) year = parseInt(match[0], 10);
+  }
+
+  const posterUrl = item.posterPath ? `https://image.tmdb.org/t/p/w300${item.posterPath}` : null;
+
+  return {
+    title: item.title || '',
+    originalTitle: item.title || '',
+    year,
+    type: isSeries ? 'series' : 'movie',
+    quality: item.quality || null,
+    rating: item.voteAverage ? parseFloat(item.voteAverage) : null,
+    season: null, // Only visible inside series detail usually
+    poster: posterUrl,
+    slug: item.slug,
+    link: {
+      endpoint,
+      url: `${BASE_URL}/${endpoint}`,
+      thumbnail: posterUrl
+    }
+  };
+}
+
+/**
  * Normalize a relative/absolute href into a link object.
  * @private
  */
@@ -145,224 +181,7 @@ function extractCardTitle($, card) {
   return '';
 }
 
-/**
- * Parse media items from content cards on a listing page.
- *
- * The new IDLIX Next.js site renders content rows with <a class="content-card">
- * elements containing poster images, ratings, and badges. It also includes a
- * <section class="sr-only"> with plain <ul><li><a> lists as a fallback.
- *
- * @param {string} html - Raw HTML to parse.
- * @param {string} [type] - Filter by media type: 'movie' or 'series'.
- * @returns {Array<Object>} Array of media items with rich metadata.
- */
-function parseMediaItems(html, type) {
-  const $ = cheerio.load(html);
-  const items = [];
-  const seen = new Set();
-  const typeFilter = type && type !== 'all' ? type : null;
 
-  // 1) Try content cards first (rich data)
-  $('a.content-card').each((_, card) => {
-    const href = $(card).attr('href') || '';
-    if (!href) return;
-
-    const isMovie = href.startsWith('/movie/');
-    const isSeries = href.startsWith('/series/');
-    if (!isMovie && !isSeries) return;
-    if (typeFilter === 'movie' && !isMovie) return;
-    if (typeFilter === 'series' && !isSeries) return;
-
-    const endpoint = href.replace(/^\//, '');
-    if (seen.has(endpoint)) return;
-    seen.add(endpoint);
-
-    const { title, year } = parseTitleYear(extractCardTitle($, card));
-
-    const meta = extractCardMeta($, card);
-    const thumbnail = extractCardThumbnail($, card);
-    const slug = endpoint.split('/').slice(1).join('/');
-
-    items.push({
-      title,
-      originalTitle: title,
-      year,
-      type: meta.type || (isMovie ? 'movie' : 'series'),
-      quality: meta.quality,
-      rating: meta.rating,
-      season: meta.season,
-      poster: thumbnail,
-      slug,
-      link: normalizeLink(href, thumbnail),
-    });
-  });
-
-  // 2) Fallback: sr-only lists (no rich metadata)
-  if (items.length === 0) {
-    $('section.sr-only ul li a').each((_, el) => {
-      const href = $(el).attr('href') || '';
-      const title = $(el).text().trim();
-      if (!title || !href) return;
-
-      const isMovie = href.startsWith('/movie/');
-      const isSeries = href.startsWith('/series/');
-      if (!isMovie && !isSeries) return;
-      if (type === 'movie' && !isMovie) return;
-      if (type === 'series' && !isSeries) return;
-
-      const endpoint = href.replace(/^\//, '');
-      if (seen.has(endpoint)) return;
-      seen.add(endpoint);
-      const slug = endpoint.split('/').slice(1).join('/');
-
-      items.push({
-        title,
-        originalTitle: title,
-        year: null,
-        type: isMovie ? 'movie' : 'series',
-        quality: null,
-        rating: null,
-        season: null,
-        poster: null,
-        slug,
-        link: normalizeLink(href),
-      });
-    });
-  }
-
-  return items;
-}
-
-/**
- * Parse a named section from the homepage.
- *
- * @param {string} html - Raw HTML to parse.
- * @param {string} sectionTitle - Exact text of the <h2> heading.
- * @param {string} [type] - Optional filter: 'movie' or 'series'.
- * @returns {Array<Object>}
- */
-function parseHomepageSection(html, sectionTitle, type) {
-  const $ = cheerio.load(html);
-  const items = [];
-  const seen = new Set();
-  const typeFilter = type && type !== 'all' ? type : null;
-
-  $('section.sr-only h2').each((_, el) => {
-    if ($(el).text().trim() !== sectionTitle) return;
-
-    const $ul = $(el).next('ul');
-    $ul.find('li a').each((_, a) => {
-      const href = $(a).attr('href') || '';
-      const title = $(a).text().trim();
-      if (!title || !href) return;
-
-      const isMovie = href.startsWith('/movie/');
-      const isSeries = href.startsWith('/series/');
-      if (!isMovie && !isSeries) return;
-      if (typeFilter === 'movie' && !isMovie) return;
-      if (typeFilter === 'series' && !isSeries) return;
-
-      const endpoint = href.replace(/^\//, '');
-      if (seen.has(endpoint)) return;
-      seen.add(endpoint);
-      const slug = endpoint.split('/').slice(1).join('/');
-
-      items.push({
-        title,
-        originalTitle: title,
-        year: null,
-        type: isMovie ? 'movie' : 'series',
-        quality: null,
-        rating: null,
-        season: null,
-        poster: null,
-        slug,
-        link: normalizeLink(href),
-      });
-    });
-  });
-
-  return items;
-}
-
-/**
- * Parse all homepage sections into a keyed object.
- *
- * @param {string} html
- * @returns {Object<string, Array>}
- */
-function parseHomepageSections(html) {
-  const $ = cheerio.load(html);
-  const sections = {};
-
-  $('section.sr-only h2').each((_, el) => {
-    const title = $(el).text().trim();
-    if (!title) return;
-    const $ul = $(el).next('ul');
-    const items = [];
-    $ul.find('li a').each((_, a) => {
-      const href = $(a).attr('href') || '';
-      const text = $(a).text().trim();
-      if (!text || !href) return;
-      if (!href.startsWith('/movie/') && !href.startsWith('/series/')) return;
-      items.push({
-        title: text,
-        originalTitle: text,
-        type: href.startsWith('/movie/') ? 'movie' : 'series',
-        link: normalizeLink(href),
-        slug: href.split('/').filter(Boolean).pop() || null,
-      });
-    });
-    if (items.length) sections[title] = items;
-  });
-
-  return sections;
-}
-
-/**
- * Parse a browse/listing page (e.g. /movie, /series, /genre/x, /country/x,
- * /year/x, /network/x). Extracts content cards and pagination info.
- *
- * @param {string} html
- * @param {string} [type] - 'movie' | 'series'
- * @returns {{ items: Array, pagination: Object|null }}
- */
-function parseBrowsePage(html, type) {
-  const $ = cheerio.load(html);
-  const items = parseMediaItems(html, type);
-
-  // Pagination: look for Next.js RSC payload or <a> links with page param
-  let pagination = null;
-
-  // Try link-based pagination first
-  const pageLinks = [];
-  $('a[href*="page="]').each((_, el) => {
-    const href = $(el).attr('href') || '';
-    const m = href.match(/page=(\d+)/);
-    if (m) pageLinks.push(parseInt(m[1], 10));
-  });
-
-  // Also check Next.js flight data for pagination markers
-  $('script').each((_, el) => {
-    const txt = $(el).html() || '';
-    const matches = txt.match(/"page":\s*(\d+)/g) || [];
-    matches.forEach(m => {
-      const num = parseInt(m.match(/\d+/)[0], 10);
-      pageLinks.push(num);
-    });
-  });
-
-  if (pageLinks.length) {
-    const maxPage = Math.max(...pageLinks);
-    pagination = {
-      currentPage: 1,
-      totalPages: maxPage,
-      hasNext: maxPage > 1,
-    };
-  }
-
-  return { items, pagination };
-}
 
 /**
  * Parse a category listing page into standardized entries.
@@ -747,16 +566,7 @@ function parseStreamUrl(html, interceptedUrl = null) {
   return null;
 }
 
-/**
- * Parse search results page (/search?q=...).
- *
- * @param {string} html
- * @returns {Array<Object>}
- */
-function parseSearchResults(html) {
-  // The search page renders content cards the same way as listing pages
-  return parseMediaItems(html, null);
-}
+
 
 /**
  * Parse the leaderboard page (/leaderboard).
@@ -841,12 +651,8 @@ function parseLeaderboard(html) {
 
 module.exports = {
   parseCategoryItems,
-  parseMediaItems,
-  parseHomepageSection,
-  parseHomepageSections,
-  parseBrowsePage,
   parseDetail,
   parseStreamUrl,
-  parseSearchResults,
   parseLeaderboard,
+  mapApiItem,
 };

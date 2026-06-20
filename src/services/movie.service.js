@@ -3,7 +3,7 @@
 const httpClient = require('../lib/httpClient');
 const cache      = require('../lib/cacheService');
 const { CACHE_TTL } = require('../config/env');
-const { parseMediaItems, parseHomepageSection, parseDetail } = require('../lib/scraper');
+const { mapApiItem, parseDetail } = require('../lib/scraper');
 
 /**
  * Fetch and parse the main movie browse page.
@@ -13,8 +13,9 @@ async function getBrowse() {
   const key = 'movie.browse';
   if (cache.isHit(key, CACHE_TTL.page)) return cache.get(key);
 
-  const { data } = await httpClient.get('/movie');
-  const items = parseMediaItems(data, 'movie');
+  const data = await httpClient.getJson('/api/movies?page=1&limit=36&sort=createdAt');
+  const items = (data?.data || []).map(mapApiItem).filter(Boolean);
+  
   cache.set(key, items);
   return items;
 }
@@ -27,8 +28,13 @@ async function getMcu() {
   const key = 'mcu';
   if (cache.isHit(key, CACHE_TTL.mcu)) return cache.get(key);
 
-  const { data } = await httpClient.get('/');
-  const items = parseHomepageSection(data, 'Collections');
+  const data = await httpClient.getJson('/api/homepage');
+  if (!data) return [];
+
+  const allSections = [...(data.above || []), ...(data.below || [])];
+  const section = allSections.find(s => s.title && s.title.toLowerCase().includes('collection'));
+  const items = (section?.data || []).map(mapApiItem).filter(Boolean);
+  
   cache.set(key, items);
   return items;
 }
@@ -41,8 +47,12 @@ async function getTrending() {
   const key = 'trending';
   if (cache.isHit(key, CACHE_TTL.trending)) return cache.get(key);
 
-  const { data } = await httpClient.get('/');
-  const items = parseHomepageSection(data, 'Trending Now', 'movie');
+  const data = await httpClient.getJson('/api/homepage');
+  if (!data || !data.above) return [];
+
+  const section = data.above.find(s => s.title && s.title.toLowerCase().includes('trending')) || data.above[0];
+  const items = (section?.data || []).map(mapApiItem).filter(i => i.type === 'movie');
+  
   cache.set(key, items);
   return items;
 }
@@ -56,10 +66,10 @@ async function getTrendingPage(page) {
   const key = `trending.page.${page}`;
   if (cache.isHit(key, CACHE_TTL.trending)) return cache.get(key);
 
-  const { data } = await httpClient.get('/movie');
-  const items = parseMediaItems(data, 'movie');
+  const data = await httpClient.getJson(`/api/movies?page=${page}&limit=36&sort=popularityScore`);
+  const items = (data?.data || []).map(mapApiItem).filter(Boolean);
 
-  if (items.length === 0 || page > 1) {
+  if (items.length === 0 && page > 1) {
     const err = new Error('Page not found');
     err.status = 404;
     throw err;

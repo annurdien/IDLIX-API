@@ -3,14 +3,10 @@
 const httpClient = require('../lib/httpClient');
 const cache      = require('../lib/cacheService');
 const { CACHE_TTL } = require('../config/env');
-const { parseMediaItems } = require('../lib/scraper');
+const { mapApiItem } = require('../lib/scraper');
 
 /**
  * Fetch and parse TV series for a given genre and page.
- *
- * The new site's genre pages combine movies and series in a single listing.
- * We filter to series only. Pagination is not supported by the new site;
- * page 1 returns results, pages beyond 1 throw a 404.
  *
  * @param {string} genre
  * @param {number} [page=1]
@@ -20,10 +16,10 @@ async function getGenreSeries(genre, page = 1) {
   const key = `page.series.${genre}.${page}`;
   if (cache.isHit(key, CACHE_TTL.page)) return cache.get(key);
 
-  const { data } = await httpClient.get(`/genre/${genre}`);
-  const items = parseMediaItems(data, 'series');
+  const data = await httpClient.getJson(`/api/series?genre=${genre}&page=${page}&limit=36&sort=createdAt`);
+  const items = (data?.data || []).map(mapApiItem).filter(Boolean);
 
-  if (items.length === 0 || page > 1) {
+  if (items.length === 0 && page > 1) {
     const err = new Error('Page not found');
     err.status = 404;
     throw err;
@@ -36,10 +32,6 @@ async function getGenreSeries(genre, page = 1) {
 /**
  * Fetch and parse movies for a given genre and page.
  *
- * The new site's genre pages combine movies and series in a single listing.
- * We filter to movies only. Pagination is not supported by the new site;
- * page 1 returns results, pages beyond 1 throw a 404.
- *
  * @param {string} genre
  * @param {number} [page=1]
  * @returns {Promise<Array>}
@@ -48,10 +40,10 @@ async function getGenreMovie(genre, page = 1) {
   const key = `page.movie.${genre}.${page}`;
   if (cache.isHit(key, CACHE_TTL.page)) return cache.get(key);
 
-  const { data } = await httpClient.get(`/genre/${genre}`);
-  const items = parseMediaItems(data, 'movie');
+  const data = await httpClient.getJson(`/api/movies?genre=${genre}&page=${page}&limit=36&sort=createdAt`);
+  const items = (data?.data || []).map(mapApiItem).filter(Boolean);
 
-  if (items.length === 0 || page > 1) {
+  if (items.length === 0 && page > 1) {
     const err = new Error('Page not found');
     err.status = 404;
     throw err;

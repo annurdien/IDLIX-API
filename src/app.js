@@ -17,6 +17,21 @@ const errorHandler = require('./middleware/errorHandler');
 function createApp() {
   const app = express();
 
+  // ── API Documentation (Scalar) ──────────────────────────────────────────
+  try {
+    const swaggerDocument = require('../swagger_output.json');
+    const { apiReference } = require('@scalar/express-api-reference');
+    // Mount docs BEFORE helmet so strict CSP doesn't block the Scalar CDN scripts
+    app.use('/docs', apiReference({
+      theme: 'purple',
+      spec: {
+        content: swaggerDocument,
+      },
+    }));
+  } catch (err) {
+    console.warn('Swagger output not found. Run `npm run docs:gen` to generate API docs.');
+  }
+
   // ── Security & parsing ──────────────────────────────────────────────────
   app.use(cors());
   app.use(helmet());
@@ -24,6 +39,7 @@ function createApp() {
 
   // ── API routes ──────────────────────────────────────────────────────────
   app.use('/api', routes);
+
 
   // ── Static files ────────────────────────────────────────────────────────
   app.use(express.static(path.join(__dirname, '..', 'public')));

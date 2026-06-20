@@ -223,33 +223,27 @@ async function browserFetch(url, { method = 'GET', body, headers = {} } = {}) {
 }
 
 /**
- * Navigate to a URL in a temporary tab and return the full HTML.
- * The tab is closed after use. CF cookies from the API page are inherited
- * since they share the same browser context.
+ * Fetch HTML for a given URL using the parked browser page.
+ * This replaces the old `page.goto()` approach which triggered CF challenges
+ * on every new tab. By using `fetch()` inside the existing API page context,
+ * we perfectly evade Cloudflare.
  *
  * @param {string} url
- * @param {number} [timeout=30000]
+ * @param {number} [timeout=30000] (unused, kept for compatibility)
  * @returns {Promise<string>} Full page HTML
  */
 async function fetchHtml(url, timeout = 30000) {
-  await ensureReady();
-
-  const page = await _browser.newPage();
-  try {
-    await page.setUserAgent(UA);
-    await page.setViewport({ width: 1280, height: 800 });
-
-    await page.setRequestInterception(true);
-    page.on('request', (req) => {
-      if (['image', 'font', 'media', 'stylesheet'].includes(req.resourceType())) req.abort();
-      else req.continue();
-    });
-
-    await page.goto(url, { waitUntil: 'networkidle2', timeout });
-    return page.content();
-  } finally {
-    await page.close().catch(() => {});
+  const res = await browserFetch(url, {
+    headers: {
+      'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    }
+  });
+  
+  if (!res.ok) {
+    console.warn(`[browser] fetchHtml warning: ${res.status} on ${url}`);
   }
+  
+  return res.text;
 }
 
 /**

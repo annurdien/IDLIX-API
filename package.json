@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server",
+    "docs:gen": "node swagger.js",
     "test": "jest",
     "test:coverage": "jest --coverage",
     "test:watch": "jest --watch"
@@ -38,8 +39,10 @@
     "puppeteer-extra-plugin-stealth": "^2.11.2"
   },
   "devDependencies": {
+    "@scalar/express-api-reference": "^0.10.4",
     "jest": "^29.0.0",
     "nodemon": "^2.0.7",
-    "supertest": "^6.3.0"
+    "supertest": "^6.3.0",
+    "swagger-autogen": "^2.23.7"
   }
 }
