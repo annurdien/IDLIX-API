@@ -103,4 +103,27 @@ function validateSearchQuery(req, res, next) {
   next();
 }
 
-module.exports = { validatePage, validateGenre, validateSlug, validateMediaSlug, validateYear, validateSearchQuery };
+/**
+ * Validates :season and :episode route parameters.
+ * Both must be positive integers. Coerces to Number on success.
+ *
+ * @type {import('express').RequestHandler}
+ */
+function validateEpisodeParams(req, res, next) {
+  const { season, episode } = req.params;
+  const s = parseInt(season, 10);
+  const e = parseInt(episode, 10);
+
+  if (isNaN(s) || s < 1 || String(s) !== String(season)) {
+    return res.status(400).json({ success: false, message: 'Invalid season number. Must be a positive integer.' });
+  }
+  if (isNaN(e) || e < 1 || String(e) !== String(episode)) {
+    return res.status(400).json({ success: false, message: 'Invalid episode number. Must be a positive integer.' });
+  }
+
+  req.params.season  = s;
+  req.params.episode = e;
+  next();
+}
+
+module.exports = { validatePage, validateGenre, validateSlug, validateMediaSlug, validateYear, validateSearchQuery, validateEpisodeParams };

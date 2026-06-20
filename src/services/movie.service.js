@@ -94,25 +94,36 @@ async function getDetail(slug) {
 }
 
 /**
- * Extract the stream URL for a movie.
+ * Fetch the stream data for a movie: URL, subtitles, and metadata.
  *
- * Delegates to httpClient.getStreamUrl which:
- *   1. Loads the detail page (no Turnstile)
- *   2. Clicks the play button (client-side navigation)
- *   3. Intercepts HLS/DASH manifest or play-info API responses
+ * Delegates to httpClient.getStreamData which runs the full API chain:
+ *   1. GET /api/movies/{slug}               → content UUID
+ *   2. POST /api/views/track                → view counter warm-up
+ *   3. GET /api/watch/play-info/movie/{uuid} → gateToken + countdown
+ *   4. Wait for countdown
+ *   5. POST /api/watch/session/claim        → claim JWT + redeemUrl
+ *   6. POST redeemUrl (majorplay.net)       → config URL + subtitles
  *
  * Results are cached with a short TTL since stream URLs expire.
  *
- * @param {string} slug - e.g. "per-aspera-ad-astra-2026"
- * @returns {Promise<string|null>}
+ * @param {string} slug - e.g. "salmokji-whispering-water-2026"
+ * @returns {Promise<{
+ *   streamUrl:   string | null,
+ *   subtitles:   Array<{ lang: string, label: string, url: string }>,
+ *   videoId:     string | null,
+ *   title:       string | null,
+ *   durationSec: number | null,
+ *   maxHeight:   number | null,
+ *   expiresAt:   number | null,
+ * }>}
  */
-async function getStreamUrl(slug) {
+async function getStreamData(slug) {
   const key = `movie.stream.${slug}`;
   if (cache.isHit(key, CACHE_TTL.stream)) return cache.get(key);
 
-  const streamUrl = await httpClient.getStreamUrl(`/movie/${slug}?play=1`);
-  if (streamUrl) cache.set(key, streamUrl);
-  return streamUrl;
+  const result = await httpClient.getStreamData(slug, 'movie');
+  if (result.streamUrl) cache.set(key, result);
+  return result;
 }
 
-module.exports = { getBrowse, getMcu, getTrending, getTrendingPage, getDetail, getStreamUrl };
+module.exports = { getBrowse, getMcu, getTrending, getTrendingPage, getDetail, getStreamData };

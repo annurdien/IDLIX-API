@@ -1,0 +1,31 @@
+
+> idlix-api@3.0.0 dev
+> nodemon server
+
+[33m[nodemon] 2.0.7[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: js,mjs,json[39m
+[32m[nodemon] starting `node server.js`[39m
+Listening on PORT 3000
+[streamClient] Step 1: GET https://z2.idlixku.com/api/movies/salmokji-whispering-water-2026
+[browser] Launching browser...
+[browser] Navigating to https://z2.idlixku.com (CF challenge solve)...
+[browser] ✅ cf_clearance obtained — API page ready
+[streamClient] Step 1 ✅ movie UUID: b86bd190-3d55-40cd-bf88-33cbc448c826
+[streamClient] Step 2 (views/track): 200
+[streamClient] Step 3: GET https://z2.idlixku.com/api/watch/play-info/movie/b86bd190-3d55-40cd-bf88-33cbc448c826
+[streamClient] Step 3 ✅ kind=gate, tier=guest
+[streamClient] Step 4: waiting 15500ms...
+[streamClient] Step 5: POST https://z2.idlixku.com/api/watch/session/claim
+[streamClient] Step 5 ✅ kind=pentos, redeemUrl=https://e2e.majorplay.net/api/play
+[streamClient] Step 6: POST https://e2e.majorplay.net/api/play
+[streamClient] Step 6 ✅ 2 subtitle(s)
+[streamClient] ✅ Stream ready — movie/salmokji-whispering-water-2026
+[streamClient] Step 1a: GET https://z2.idlixku.com/api/serieses/oasis-2026
+[streamClient] Step 1a: could not resolve series UUID
+[streamClient] Step 1b: GET https://z2.idlixku.com/series/oasis-2026/season/1/episode/1
+[streamClient] Step 1b: could not extract episode UUID from page
+[streamClient] Cannot proceed without episode UUID
+[browser] Closing browser (will re-launch on next request)
+[browser] Browser disconnected — will re-launch on next request

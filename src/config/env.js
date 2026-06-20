@@ -15,6 +15,13 @@ module.exports = {
   PUPPETEER_HEADLESS: process.env.PUPPETEER_HEADLESS !== 'false',
 
   /**
+   * How long (in ms) to cache the harvested CF cookies before re-harvesting.
+   * Cloudflare clearance cookies typically last 30 minutes; default 25 min.
+   * Set to 0 to always re-harvest (not recommended).
+   */
+  CF_COOKIE_REFRESH_MS: Number(process.env.CF_COOKIE_REFRESH_MS) || 25 * 60 * 1000,
+
+  /**
    * Per-category cache TTLs in hours.
    * Each can be overridden via a corresponding CACHE_TTL_* env var.
    */
@@ -29,7 +36,7 @@ module.exports = {
     search:      Number(process.env.CACHE_TTL_SEARCH)       || 0.5,
     leaderboard: Number(process.env.CACHE_TTL_LEADERBOARD)  || 1,
     home:        Number(process.env.CACHE_TTL_HOME)         || 1,
-    // Stream URLs may expire — keep TTL short (15 minutes = 0.25h)
+    // Stream URLs expire — keep TTL short (15 minutes = 0.25h)
     stream:      Number(process.env.CACHE_TTL_STREAM)       || 0.25,
   },
 };

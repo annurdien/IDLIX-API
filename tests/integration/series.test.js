@@ -1,6 +1,9 @@
 'use strict';
 
-jest.mock('../../src/lib/httpClient', () => ({ get: jest.fn(), getStreamUrl: jest.fn() }));
+jest.mock('../../src/lib/httpClient', () => ({
+  get:           jest.fn(),
+  getStreamData: jest.fn(),
+}));
 jest.mock('../../src/lib/cacheService', () => ({
   isHit: jest.fn(),
   get:   jest.fn(),
@@ -180,16 +183,28 @@ describe('Series Routes', () => {
 
   describe('GET /api/series/:slug/stream', () => {
     it('returns stream URL when extraction succeeds', async () => {
-      httpClient.getStreamUrl.mockResolvedValue('https://cdn.example.com/ep.m3u8');
+      httpClient.getStreamData.mockResolvedValue({
+        streamUrl:   'https://cdn.example.com/ep.m3u8',
+        subtitles:   [{ lang: 'id', label: 'Indonesian', url: 'https://cdn.example.com/id.vtt' }],
+        videoId:     'xyz789',
+        title:       'Test Series S01E01',
+        durationSec: 2700,
+        maxHeight:   1080,
+        expiresAt:   9999999999,
+      });
 
       const res = await request(app).get('/api/series/some-series-2024/stream');
 
       expect(res.status).toBe(200);
       expect(res.body.data.streamUrl).toBe('https://cdn.example.com/ep.m3u8');
+      expect(Array.isArray(res.body.data.subtitles)).toBe(true);
     });
 
     it('returns 404 when stream URL cannot be extracted', async () => {
-      httpClient.getStreamUrl.mockResolvedValue(null);
+      httpClient.getStreamData.mockResolvedValue({
+        streamUrl: null, subtitles: [], videoId: null,
+        title: null, durationSec: null, maxHeight: null, expiresAt: null,
+      });
 
       const res = await request(app).get('/api/series/some-series-2024/stream');
 

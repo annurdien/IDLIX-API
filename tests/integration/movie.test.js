@@ -2,8 +2,8 @@
 
 // Must be hoisted before any require of the real modules
 jest.mock('../../src/lib/httpClient', () => ({
-  get: jest.fn(),
-  getStreamUrl: jest.fn(),
+  get:           jest.fn(),
+  getStreamData: jest.fn(),
 }));
 jest.mock('../../src/lib/cacheService', () => ({
   isHit: jest.fn(),
@@ -207,17 +207,30 @@ describe('Movie Routes', () => {
 
   describe('GET /api/movie/:slug/stream', () => {
     it('returns stream URL when extraction succeeds', async () => {
-      httpClient.getStreamUrl.mockResolvedValue('https://cdn.example.com/stream.m3u8');
+      httpClient.getStreamData.mockResolvedValue({
+        streamUrl:   'https://cdn.example.com/stream.m3u8',
+        subtitles:   [{ lang: 'en', label: 'English', url: 'https://cdn.example.com/en.vtt' }],
+        videoId:     'abc123',
+        title:       'Test Movie',
+        durationSec: 3600,
+        maxHeight:   720,
+        expiresAt:   9999999999,
+      });
 
       const res = await request(app).get('/api/movie/some-movie-2024/stream');
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data.streamUrl).toBe('https://cdn.example.com/stream.m3u8');
+      expect(Array.isArray(res.body.data.subtitles)).toBe(true);
+      expect(res.body.data.subtitles[0].lang).toBe('en');
     });
 
     it('returns 404 when stream URL cannot be extracted', async () => {
-      httpClient.getStreamUrl.mockResolvedValue(null);
+      httpClient.getStreamData.mockResolvedValue({
+        streamUrl: null, subtitles: [], videoId: null,
+        title: null, durationSec: null, maxHeight: null, expiresAt: null,
+      });
 
       const res = await request(app).get('/api/movie/some-movie-2024/stream');
 

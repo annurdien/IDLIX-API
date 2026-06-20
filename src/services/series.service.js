@@ -150,25 +150,54 @@ async function getDetail(slug) {
 }
 
 /**
- * Extract the stream URL for a series episode.
+ * Fetch the stream data for a series episode: URL, subtitles, and metadata.
  *
- * Delegates to httpClient.getStreamUrl which:
- *   1. Loads the detail page (no Turnstile)
- *   2. Clicks the play button (client-side navigation)
- *   3. Intercepts HLS/DASH manifest or play-info API responses
- *
+ * Delegates to httpClient.getStreamData which runs the full API chain.
  * Results are cached with a short TTL since stream URLs expire.
  *
  * @param {string} slug - e.g. "the-last-of-us-2023"
- * @returns {Promise<string|null>}
+ * @returns {Promise<{
+ *   streamUrl:   string | null,
+ *   subtitles:   Array<{ lang: string, label: string, url: string }>,
+ *   videoId:     string | null,
+ *   title:       string | null,
+ *   durationSec: number | null,
+ *   maxHeight:   number | null,
+ *   expiresAt:   number | null,
+ * }>}
  */
-async function getStreamUrl(slug) {
+async function getStreamData(slug) {
   const key = `series.stream.${slug}`;
   if (cache.isHit(key, CACHE_TTL.stream)) return cache.get(key);
 
-  const streamUrl = await httpClient.getStreamUrl(`/series/${slug}?play=1`);
-  if (streamUrl) cache.set(key, streamUrl);
-  return streamUrl;
+  const result = await httpClient.getStreamData(slug, 'series');
+  if (result.streamUrl) cache.set(key, result);
+  return result;
+}
+
+/**
+ * Fetch stream data for a specific series episode.
+ *
+ * @param {string} slug    - e.g. "oasis-2026"
+ * @param {number} season  - Season number (1-based)
+ * @param {number} episode - Episode number (1-based)
+ * @returns {Promise<{
+ *   streamUrl:   string | null,
+ *   subtitles:   Array<{ lang: string, label: string, url: string }>,
+ *   videoId:     string | null,
+ *   title:       string | null,
+ *   durationSec: number | null,
+ *   maxHeight:   number | null,
+ *   expiresAt:   number | null,
+ * }>}
+ */
+async function getEpisodeStreamData(slug, season, episode) {
+  const key = `series.stream.${slug}.s${season}e${episode}`;
+  if (cache.isHit(key, CACHE_TTL.stream)) return cache.get(key);
+
+  const result = await httpClient.getEpisodeStreamData(slug, Number(season), Number(episode));
+  if (result.streamUrl) cache.set(key, result);
+  return result;
 }
 
 module.exports = {
@@ -181,5 +210,6 @@ module.exports = {
   getNetflixSeries,
   getNetflixSeriesPage,
   getDetail,
-  getStreamUrl,
+  getStreamData,
+  getEpisodeStreamData,
 };
