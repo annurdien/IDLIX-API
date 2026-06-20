@@ -12,14 +12,6 @@ exports.browse = async (req, res, next) => {
   }
 };
 
-exports.mcu = async (req, res, next) => {
-  try {
-    const data = await movieService.getMcu();
-    success(res, data);
-  } catch (err) {
-    next(err);
-  }
-};
 
 exports.trending = async (req, res, next) => {
   try {

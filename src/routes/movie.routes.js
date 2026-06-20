@@ -1,16 +1,13 @@
 'use strict';
 
-const { Router }      = require('express');
-const movieController  = require('../controllers/movie.controller');
+const { Router } = require('express');
+const movieController = require('../controllers/movie.controller');
 const { validatePage, validateMediaSlug } = require('../middleware/validate');
 
 const router = Router();
 
 /** GET /api/movie */
 router.get('/', movieController.browse);
-
-/** GET /api/movie/mcu */
-router.get('/mcu', movieController.mcu);
 
 /** GET /api/movie/trending */
 router.get('/trending', movieController.trending);

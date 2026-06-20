@@ -79,7 +79,6 @@ All responses follow the envelope:
 | GET | `/movie` | Browse all movies |
 | GET | `/movie/trending` | Trending movies |
 | GET | `/movie/trending/:page` | Trending movies (page N) |
-| GET | `/movie/mcu` | Collections / curated picks |
 | GET | `/movie/:slug` | Movie detail — full metadata |
 | GET | `/movie/:slug/stream` | Extract stream URL (Puppeteer) |
 

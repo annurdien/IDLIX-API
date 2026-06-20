@@ -1,7 +1,7 @@
 'use strict';
 
 const httpClient = require('../lib/httpClient');
-const cache      = require('../lib/cacheService');
+const cache = require('../lib/cacheService');
 const { CACHE_TTL } = require('../config/env');
 const { mapApiItem, mapApiDetail } = require('../lib/scraper');
 
@@ -15,26 +15,7 @@ async function getBrowse() {
 
   const data = await httpClient.getJson('/api/movies?page=1&limit=36&sort=createdAt');
   const items = (data?.data || []).map(mapApiItem).filter(Boolean);
-  
-  cache.set(key, items);
-  return items;
-}
 
-/**
- * Fetch and parse the "Collections" section from the homepage.
- * @returns {Promise<Array>}
- */
-async function getMcu() {
-  const key = 'mcu';
-  if (cache.isHit(key, CACHE_TTL.mcu)) return cache.get(key);
-
-  const data = await httpClient.getJson('/api/homepage');
-  if (!data) return [];
-
-  const allSections = [...(data.above || []), ...(data.below || [])];
-  const section = allSections.find(s => s.title && s.title.toLowerCase().includes('collection'));
-  const items = (section?.data || []).map(mapApiItem).filter(Boolean);
-  
   cache.set(key, items);
   return items;
 }
@@ -52,7 +33,7 @@ async function getTrending() {
 
   const section = data.above.find(s => s.title && s.title.toLowerCase().includes('trending')) || data.above[0];
   const items = (section?.data || []).map(mapApiItem).filter(i => i.type === 'movie');
-  
+
   cache.set(key, items);
   return items;
 }
@@ -131,4 +112,4 @@ async function getStreamData(slug) {
   return result;
 }
 
-module.exports = { getBrowse, getMcu, getTrending, getTrendingPage, getDetail, getStreamData };
+module.exports = { getBrowse, getTrending, getTrendingPage, getDetail, getStreamData };

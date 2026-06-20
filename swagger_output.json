@@ -72,16 +72,6 @@
         }
       }
     },
-    "/api/movie/mcu": {
-      "get": {
-        "description": "",
-        "responses": {
-          "default": {
-            "description": ""
-          }
-        }
-      }
-    },
     "/api/movie/trending": {
       "get": {
         "description": "",
