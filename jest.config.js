@@ -9,6 +9,10 @@ module.exports = {
     // Exclude legacy files kept for reference only — they are no longer imported
     '!src/controllers/tv_series.controller.js',
     '!src/routes/tv_series.routes.js',
+    // Exclude native browser/HTTP infrastructure
+    '!src/lib/httpClient.js',
+    '!src/lib/streamClient.js',
+    '!src/lib/cfBypass/**',
   ],
   coverageThreshold: {
     global: {
