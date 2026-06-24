@@ -11,7 +11,7 @@ services:
     restart: unless-stopped
 
   api:
-    build: .
+    image: ghcr.io/annurdien/idlix-api:latest
     container_name: idlix-api
     ports:
       - "3000:3000"
