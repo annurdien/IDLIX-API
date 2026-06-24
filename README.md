@@ -16,12 +16,14 @@ A REST API that scrapes `https://z2.idlixku.com/` using **Puppeteer + stealth pl
 
 ## Installation
 
-The easiest way to run the API is using Docker Compose, which automatically spins up the Node.js API and the Stealth microservice.
+The easiest way to run the API is using Docker Compose. Since the Docker images are already published to the GitHub Container Registry, you don't even need to clone the repository!
 
 ```bash
-git clone https://github.com/annurdien/IDLIX-API.git
-cd IDLIX-API
-docker compose up -d --build
+# 1. Download the docker-compose.yml file
+curl -O https://raw.githubusercontent.com/annurdien/IDLIX-API/main/docker-compose.yml
+
+# 2. Spin up the API and the Stealth microservice
+docker compose up -d
 ```
 
 The API will be available at `http://localhost:3000`.
