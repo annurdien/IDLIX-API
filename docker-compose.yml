@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  stealth:
+    image: ghcr.io/annurdien/stealth:latest
+    container_name: idlix-stealth
+    ports:
+      - "8191:8191"
+    environment:
+      - HEADLESS=true
+    restart: unless-stopped
+
+  api:
+    build: .
+    container_name: idlix-api
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - STEALTH_API_URL=http://stealth:8191
+    depends_on:
+      - stealth
+    restart: unless-stopped
