@@ -1,195 +1,147 @@
 'use strict';
 
-const fs   = require('fs');
-const path = require('path');
+const { mapApiItem, mapApiDetail } = require('../../src/lib/scraper');
 
-const {
-  parseMediaItems,
-  parseHomepageSection,
-  parseCategoryItems,
-  parseDetail,
-} = require('../../src/lib/scraper');
+describe('scraper.js', () => {
 
-const FIXTURES = path.join(__dirname, '../fixtures');
-const read = (name) => fs.readFileSync(path.join(FIXTURES, name), 'utf-8');
-
-// ── parseMediaItems ──────────────────────────────────────────────────────────
-
-describe('parseMediaItems', () => {
-  const trendingHtml = read('trending.html');
-  const genreHtml    = read('genre.html');
-  const networkHtml  = read('network.html');
-
-  it('extracts movie items from a movie listing page', () => {
-    const items = parseMediaItems(trendingHtml, 'movie');
-    expect(items).toHaveLength(2); // third item has empty text — filtered
-    expect(items[0]).toMatchObject({
-      title: 'Trending Movie 1',
-      link: {
-        endpoint: 'movie/trending-movie-1',
-        url:      'https://z2.idlixku.com/movie/trending-movie-1',
-        thumbnail: null,
-      },
+  describe('mapApiItem', () => {
+    it('returns null if item is falsy', () => {
+      expect(mapApiItem(null)).toBeNull();
     });
-    expect(items[1].title).toBe('Trending Movie 2');
-  });
 
-  it('extracts movie items from a genre page', () => {
-    const items = parseMediaItems(genreHtml, 'movie');
-    expect(items).toHaveLength(1);
-    expect(items[0].title).toBe('Action Movie 1');
-  });
+    it('maps a movie item correctly', () => {
+      const apiItem = {
+        title: 'Inception',
+        slug: 'inception',
+        contentType: 'movie',
+        releaseDate: '2010-07-16',
+        voteAverage: 8.8,
+        posterPath: '/poster.jpg',
+        quality: 'HD'
+      };
 
-  it('extracts tvshow items from a genre page', () => {
-    const items = parseMediaItems(genreHtml, 'series');
-    expect(items).toHaveLength(1);
-    expect(items[0].title).toBe('Action Series 1');
-  });
+      const mapped = mapApiItem(apiItem);
+      expect(mapped).toMatchObject({
+        title: 'Inception',
+        originalTitle: 'Inception',
+        year: 2010,
+        type: 'movie',
+        quality: 'HD',
+        rating: 8.8,
+        season: null,
+        poster: 'https://image.tmdb.org/t/p/w300/poster.jpg',
+        slug: 'inception',
+        link: {
+          endpoint: 'movie/inception',
+          url: 'https://z2.idlixku.com/movie/inception',
+          thumbnail: 'https://image.tmdb.org/t/p/w300/poster.jpg'
+        }
+      });
+    });
 
-  it('extracts series items from a network page', () => {
-    const items = parseMediaItems(networkHtml, 'series');
-    expect(items).toHaveLength(2);
-    expect(items[0].title).toBe('Test Series 1');
-    expect(items[1].title).toBe('Test Series 2');
-  });
+    it('maps a series item correctly', () => {
+      const apiItem = {
+        title: 'Breaking Bad',
+        slug: 'breaking-bad',
+        contentType: 'series',
+        releaseDate: '2008-01-20'
+      };
 
-  it('extracts all media items when no type filter is given', () => {
-    const items = parseMediaItems(networkHtml);
-    expect(items).toHaveLength(4);
-  });
-
-  it('returns an empty array when no matching elements are found', () => {
-    expect(parseMediaItems('<div></div>', 'movie')).toEqual([]);
-  });
-
-  it('skips items that have no text (title)', () => {
-    const html = `
-      <section class="sr-only">
-        <ul>
-          <li><a href="/movie/no-text"></a></li>
-          <li><a href="/movie/has-text">Has Text</a></li>
-        </ul>
-      </section>`;
-    const items = parseMediaItems(html, 'movie');
-    expect(items).toHaveLength(1);
-    expect(items[0].title).toBe('Has Text');
-  });
-
-  it('skips non-media links', () => {
-    const html = `
-      <section class="sr-only">
-        <ul>
-          <li><a href="/leaderboard">Leaderboard</a></li>
-          <li><a href="/movie/real-movie">Real Movie</a></li>
-        </ul>
-      </section>`;
-    const items = parseMediaItems(html, 'movie');
-    expect(items).toHaveLength(1);
-    expect(items[0].title).toBe('Real Movie');
-  });
-});
-
-// ── parseHomepageSection ─────────────────────────────────────────────────────
-
-describe('parseHomepageSection', () => {
-  const homepageHtml = read('homepage.html');
-
-  it('extracts items from the "Trending Now" section', () => {
-    const items = parseHomepageSection(homepageHtml, 'Trending Now');
-    expect(items).toHaveLength(3);
-    expect(items[0]).toMatchObject({
-      title: 'Teach You a Lesson',
-      link: {
-        endpoint: 'series/teach-you-a-lesson-2026',
-        url:      'https://z2.idlixku.com/series/teach-you-a-lesson-2026',
-        thumbnail: null,
-      },
+      const mapped = mapApiItem(apiItem);
+      expect(mapped).toMatchObject({
+        title: 'Breaking Bad',
+        year: 2008,
+        type: 'series',
+        link: expect.objectContaining({ endpoint: 'series/breaking-bad' })
+      });
     });
   });
 
-  it('filters to movies only when type is "movie"', () => {
-    const items = parseHomepageSection(homepageHtml, 'Trending Now', 'movie');
-    expect(items).toHaveLength(1);
-    expect(items[0].title).toBe('Salmokji: Whispering Water');
-  });
-
-  it('filters to series only when type is "series"', () => {
-    const items = parseHomepageSection(homepageHtml, 'Trending Now', 'series');
-    expect(items).toHaveLength(2);
-    expect(items[0].title).toBe('Teach You a Lesson');
-  });
-
-  it('extracts items from the "Recently Added Movies" section', () => {
-    const items = parseHomepageSection(homepageHtml, 'Recently Added Movies', 'movie');
-    expect(items).toHaveLength(2);
-    expect(items[0].title).toBe('Per Aspera Ad Astra');
-  });
-
-  it('extracts items from the "Collections" section', () => {
-    const items = parseHomepageSection(homepageHtml, 'Collections');
-    expect(items).toHaveLength(2);
-  });
-
-  it('extracts items from the "Network Originals" section', () => {
-    const items = parseHomepageSection(homepageHtml, 'Network Originals', 'series');
-    expect(items).toHaveLength(2);
-  });
-
-  it('returns an empty array for a non-existent section', () => {
-    expect(parseHomepageSection(homepageHtml, 'Nonexistent Section')).toEqual([]);
-  });
-
-  it('returns an empty array for HTML without the expected structure', () => {
-    expect(parseHomepageSection('<div></div>', 'Trending Now')).toEqual([]);
-  });
-});
-
-// ── parseCategoryItems ─────────────────────────────────────────────────────
-
-describe('parseCategoryItems', () => {
-  it('extracts country, year, and network entries from category pages', () => {
-    const html = `
-      <section class="sr-only">
-        <ul>
-          <li><a href="/country/CN">China</a></li>
-          <li><a href="/year/2026">2026</a></li>
-          <li><a href="/network/hbo">HBO</a></li>
-        </ul>
-      </section>`;
-
-    expect(parseCategoryItems(html, 'country')).toMatchObject([
-      { title: 'China', code: 'CN', value: 'CN' },
-    ]);
-    expect(parseCategoryItems(html, 'year')).toMatchObject([
-      { title: '2026', year: 2026, value: 2026 },
-    ]);
-    expect(parseCategoryItems(html, 'network')).toMatchObject([
-      { title: 'HBO', network: 'hbo', value: 'hbo' },
-    ]);
-  });
-});
-
-// ── parseDetail ───────────────────────────────────────────────────────────
-
-describe('parseDetail', () => {
-  const detailHtml = fs.readFileSync(path.join(__dirname, '../../site/movie_detail.html'), 'utf-8');
-
-  it('extracts rich movie metadata and playback URLs', () => {
-    const detail = parseDetail(detailHtml);
-
-    expect(detail).toMatchObject({
-      title: 'Per Aspera Ad Astra',
-      originalTitle: expect.any(String),
-      year: 2026,
-      runtimeMinutes: 111,
-      type: 'movie',
-      country: 'China',
+  describe('mapApiDetail', () => {
+    it('returns empty object if item is falsy', () => {
+      expect(mapApiDetail(null)).toEqual({});
     });
-    expect(detail.keywords).toEqual(expect.arrayContaining(['virtual reality', 'dream realm']));
-    expect(detail.watchUrl).toContain('?play=1');
-    expect(detail.playerUrl).toContain('?play=1');
-    expect(detail.breadcrumbs.length).toBeGreaterThan(0);
-    expect(detail.poster).toContain('image.tmdb.org');
-    expect(detail.streamUrl).toBeNull();
+
+    it('maps a movie detail correctly', () => {
+      const apiDetail = {
+        title: 'Interstellar',
+        slug: 'interstellar',
+        releaseDate: '2014-11-05',
+        runtime: 169,
+        overview: 'A team of explorers travel through a wormhole...',
+        posterPath: '/interstellar.jpg',
+        backdropPath: '/interstellar_bg.jpg',
+        genres: [{ name: 'Adventure' }, { name: 'Drama' }, { name: 'Science Fiction' }],
+        country: 'United States',
+        originalLanguage: 'en',
+        director: 'Christopher Nolan',
+        cast: [
+          { name: 'Matthew McConaughey', character: 'Cooper', profilePath: '/matt.jpg' }
+        ],
+        trailerUrl: 'https://youtube.com/watch?v=zSWdZVtXT7E',
+        keywords: [{ name: 'space travel' }]
+      };
+
+      const mapped = mapApiDetail(apiDetail);
+      expect(mapped).toMatchObject({
+        title: 'Interstellar',
+        year: 2014,
+        type: 'movie',
+        runtime: 'PT169M',
+        runtimeMinutes: 169,
+        overview: 'A team of explorers travel through a wormhole...',
+        poster: 'https://image.tmdb.org/t/p/w300/interstellar.jpg',
+        backdrop: 'https://image.tmdb.org/t/p/w1280/interstellar_bg.jpg',
+        genres: ['Adventure', 'Drama', 'Science Fiction'],
+        country: 'United States',
+        language: 'en',
+        director: { name: 'Christopher Nolan', url: null },
+        trailer: 'https://youtube.com/watch?v=zSWdZVtXT7E',
+        keywords: ['space travel'],
+        seasons: null
+      });
+      expect(mapped.cast).toHaveLength(1);
+      expect(mapped.cast[0]).toEqual({
+        name: 'Matthew McConaughey',
+        character: 'Cooper',
+        image: 'https://image.tmdb.org/t/p/w185/matt.jpg'
+      });
+    });
+
+    it('maps a series detail correctly with seasons', () => {
+      const apiDetail = {
+        title: 'Game of Thrones',
+        slug: 'game-of-thrones',
+        numberOfSeasons: 8,
+        firstAirDate: '2011-04-17',
+        seasons: [
+          {
+            name: 'Season 1',
+            seasonNumber: 1,
+            episodeCount: 10,
+            episodes: [
+              { episodeNumber: 1, title: 'Winter Is Coming', overview: 'Ned Stark...' }
+            ]
+          }
+        ]
+      };
+
+      const mapped = mapApiDetail(apiDetail);
+      expect(mapped).toMatchObject({
+        title: 'Game of Thrones',
+        year: 2011,
+        type: 'series',
+        seasons: [
+          {
+            name: 'Season 1',
+            seasonNumber: 1,
+            episodeCount: 10,
+            episodes: [
+              { episodeNumber: 1, title: 'Winter Is Coming', overview: 'Ned Stark...' }
+            ]
+          }
+        ]
+      });
+    });
   });
 });

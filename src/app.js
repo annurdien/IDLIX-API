@@ -29,7 +29,9 @@ function createApp() {
       },
     }));
   } catch (err) {
-    console.warn('Swagger output not found. Run `npm run docs:gen` to generate API docs.');
+    if (process.env.NODE_ENV !== 'test') {
+      console.warn('Swagger output not found. Run `npm run docs:gen` to generate API docs.');
+    }
   }
 
   // ── Security & parsing ──────────────────────────────────────────────────
