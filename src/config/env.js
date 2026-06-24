@@ -11,15 +11,8 @@ module.exports = {
   /** HTTP port the server listens on. */
   PORT: process.env.PORT || 3000,
 
-  /** Whether Puppeteer runs in headless mode (set to 'false' to debug). */
-  PUPPETEER_HEADLESS: process.env.PUPPETEER_HEADLESS !== 'false',
-
-  /**
-   * How long (in ms) to cache the harvested CF cookies before re-harvesting.
-   * Cloudflare clearance cookies typically last 30 minutes; default 25 min.
-   * Set to 0 to always re-harvest (not recommended).
-   */
-  CF_COOKIE_REFRESH_MS: Number(process.env.CF_COOKIE_REFRESH_MS) || 25 * 60 * 1000,
+  /** URL of the Stealth microservice used for Cloudflare bypass. */
+  STEALTH_API_URL: process.env.STEALTH_API_URL || 'http://localhost:8191',
 
   /**
    * Per-category cache TTLs in hours.

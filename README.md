@@ -16,15 +16,26 @@ A REST API that scrapes `https://z2.idlixku.com/` using **Puppeteer + stealth pl
 
 ## Installation
 
+The easiest way to run the API is using Docker Compose, which automatically spins up the Node.js API and the Stealth microservice.
+
 ```bash
 git clone https://github.com/annurdien/IDLIX-API.git
 cd IDLIX-API
+docker compose up -d --build
+```
+
+The API will be available at `http://localhost:3000`.
+
+### Manual Installation
+
+If you prefer to run it without Docker:
+```bash
 npm install
 cp .env.example .env
 npm start
 ```
 
-> **Requirements:** Node.js 18+ (Puppeteer downloads Chromium automatically)
+> **Requirements:** Node.js 20+ and a standalone instance of the [Stealth](https://github.com/annurdien/stealth) service running.
 
 ---
 
@@ -175,11 +186,11 @@ All responses follow the envelope:
 
 ## Stream URL Extraction Architecture
 
-Unlike previous versions that relied on brittle Puppeteer network interception, the `/stream` endpoints now flawlessly replicate the internal 6-step IDLIX proxy chain while completely bypassing Cloudflare Bot Management.
+Unlike previous versions that relied on an internal bulky Puppeteer browser, the `/stream` endpoints now seamlessly proxy requests through an external **Stealth Go Microservice**.
 
 ### How it Works
 
-Because Cloudflare instantly blocks standard Node.js `fetch()` requests due to a **TLS Fingerprint mismatch** (OpenSSL vs. Chromium's BoringSSL), the API maintains a singleton, headless Chromium tab parked on the base URL. All protected API requests are executed *inside* this browser context using `page.evaluate(fetch())`, ensuring a perfect fingerprint.
+Because Cloudflare instantly blocks standard Node.js `fetch()` requests due to a **TLS Fingerprint mismatch** (OpenSSL vs. Chromium's BoringSSL), the API routes protected requests to the Stealth service. The Stealth service maintains a persistent Chromium tab and executes requests using `page.evaluate(fetch())` or native HTTP mimicking, ensuring a perfect fingerprint.
 
 The extraction follows this sequence:
 1. **UUID Resolution:** Calls `/api/movies/{slug}` or `/api/series/{slug}/season/{season}` to retrieve internal Movie/Series/Episode UUIDs.
@@ -199,7 +210,7 @@ curl http://localhost:3000/api/movie/per-aspera-ad-astra-2026/stream
 curl http://localhost:3000/api/series/oasis-2026/season/1/episode/1/stream
 ```
 
-> **Note:** The very first request after an API restart will take ~25 seconds (booting Puppeteer + solving Cloudflare JS challenge + the mandatory 15s API gate). Subsequent streams only suffer the mandatory 15-second API delay. Stream configurations are cached in-memory.
+> **Note:** The very first request after an API restart might take a few seconds longer if the Stealth service needs to solve a JS challenge. Subsequent streams only suffer the mandatory 15-second API delay. Stream configurations are cached in-memory.
 
 ---
 
@@ -211,7 +222,7 @@ See [`.env.example`](.env.example) for all available configuration options.
 |----------|---------|-------------|
 | `IDLIX_BASE_URL` | `https://z2.idlixku.com` | Upstream site URL |
 | `PORT` | `3000` | API server port |
-| `PUPPETEER_HEADLESS` | `true` | Set `false` to show browser (debug) |
+| `STEALTH_API_URL` | `http://localhost:8191` | URL of the Stealth service |
 | `CACHE_TTL_DETAIL` | `2` | Detail page cache (hours) |
 | `CACHE_TTL_STREAM` | `0.25` | Stream URL cache (hours = 15min) |
 | `CACHE_TTL_SEARCH` | `0.5` | Search cache (hours = 30min) |
